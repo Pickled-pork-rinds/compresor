@@ -1,5 +1,5 @@
 /* ==========================================================================
-   js/huffman.js — Núcleo del algoritmo de Huffman (técnica voraz)
+   js/huffman.js — Núcleo del algoritmo de Huffman (técnica voraz) 
    --------------------------------------------------------------------------
    · Implementado a mano: NO usa zip, gzip ni ninguna librería de compresión.
    · Funciona en el navegador (window.Huffman) y en Node (module.exports).
