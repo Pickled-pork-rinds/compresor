@@ -7,7 +7,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const H = require('../js/huffman.js');
-
+ 
 const enc = new TextEncoder();
 const FECHA = 1767225600; // 2026-01-01 00:00:00 UTC (fija para comparar con Python)
 let total = 0;
