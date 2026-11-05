@@ -11,7 +11,7 @@ generar exactamente los mismos bytes.
 import os
 import random
 import unittest
-
+ 
 import huffman as H
 
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "fixtures")
