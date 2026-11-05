@@ -1,5 +1,5 @@
 /* ==========================================================================
-   js/landing.js — Interactividad de la portada (index.html)
+   js/landing.js — Interactividad de la portada (index.html) 
    --------------------------------------------------------------------------
    Todo lo que se ve aquí se calcula en vivo con js/huffman.js: los bits del
    titular, el mockup, el ejemplo del pizarrón y el mapa de bytes son reales.
