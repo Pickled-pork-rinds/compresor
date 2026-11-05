@@ -9,7 +9,7 @@ Compresor de texto con el **algoritmo de Huffman** (técnica voraz) y formato de
 
 | | |
 |---|---|
-| Repositorio | [https://github.com/brianvazquez999/Tecnica_Voraz_Huffman](https://github.com/Pickled-pork-rinds/compresor) |
+| Repositorio |(https://github.com/Pickled-pork-rinds/compresor) |
 | Aplicación publicada | *pendiente (Sprint 2, HU-29)* |
 
 ## Integrantes
