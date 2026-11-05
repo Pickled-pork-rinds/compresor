@@ -1,5 +1,5 @@
 """
-backlog_a_github.py — Carga docs/backlog.csv al repositorio y al tablero de GitHub.
+backlog_a_github.py — Carga docs/backlog.csv al repositorio y al tablero de GitHub. 
 
 Por cada historia de usuario:
   · crea una issue «HU-xx · Título» con la historia, los criterios de aceptación,
