@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Estudio de compresión · Huffly</title>
+  <meta name="description" content="Analiza las frecuencias de un texto, construye el árbol de Huffman paso a paso y comprímelo en un archivo .hfz.">
+  <meta name="theme-color" content="#0b0930">
+  <meta property="og:title" content="Estudio de compresión · Huffly">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+
+  <script>document.documentElement.classList.add('js')</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.2/dist/index.global.js"></script>
+  <style type="text/tailwindcss">
+    @theme static {
+      --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+  </style>
+  <noscript><style>html.js body { opacity: 1 }</style></noscript>
+</head>
+<body>
+  <div class="bg-aurora" aria-hidden="true"></div>
+  <div class="bg-grain" aria-hidden="true"></div>
+  <a href="#fuente" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[90] btn btn-glass btn-sm">Saltar al estudio</a>
+
+  <div id="nav-root" data-active="estudio"></div>
+
+  <main class="pt-24 sm:pt-28">
+    <div class="shell">
+      <header class="max-w-3xl">
+        <h1 class="title">Estudio de compresión</h1>
+        <p class="lead mt-3">Elige un texto, analízalo, construye su árbol de Huffman y comprímelo en un archivo .hfz.</p>
+      </header>
+
+      <!-- Pasos en celular y tableta -->
+      <div class="lg:hidden sticky top-16 z-30 mt-6 -mx-4 px-4 sm:-mx-6 sm:px-6 bg-[rgba(9,8,32,0.82)] backdrop-blur-xl border-y border-[var(--line)]">
+        <nav class="stepper-mobile" id="stepper-m" aria-label="Pasos del estudio"></nav>
+      </div>
+
+      <div class="mt-6 lg:mt-10 grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-8 xl:gap-10">
+        <!-- Riel lateral -->
+        <aside class="hidden lg:block">
+          <div class="sticky top-24 space-y-5">
+            <nav class="relative" id="rail" aria-label="Pasos del estudio"></nav>
+            <div class="glass p-4 rounded-2xl text-[13px]" id="doc-mini">
+              <div class="text-[var(--text-3)]">Ningún texto cargado.</div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="space-y-6 min-w-0 pb-6">
+
+          <!-- ========================================================
+               1. FUENTE
+               ======================================================== -->
+          <section id="fuente" class="panel glass" aria-labelledby="t-fuente">
+            <div class="panel-head">
+              <div class="flex gap-4">
+                <span class="panel-num">1</span>
+                <div>
+                  <h2 id="t-fuente">Elige un texto</h2>
+                  <p class="panel-sub">Sube un .txt de tu equipo (por ejemplo, un libro descargado de Project Gutenberg), usa un ejemplo o escribe tu propio texto.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="segmented" role="tablist" aria-label="Origen del texto" id="src-tabs">
+              <button type="button" role="tab" data-value="archivo" aria-selected="true" data-icon="upload">Subir .txt</button>
+              <button type="button" role="tab" data-value="ejemplos" aria-selected="false" data-icon="flask">Ejemplos</button>
+              <button type="button" role="tab" data-value="escribir" aria-selected="false" data-icon="pen">Escribir</button>
+            </div>
+
+            <div class="mt-5" data-src="archivo">
+              <label class="dropzone" id="drop">
+                <input type="file" accept=".txt,text/plain" class="sr-only" id="file-in">
+                <span class="icon-tile" data-icon-inline="upload"></span>
+                <span class="mt-2 text-[15.5px] font-medium text-[var(--text-1)]">Arrastra un archivo .txt aquí o haz clic para elegirlo</span>
+                <span class="text-[13.5px] text-[var(--text-3)]">Cualquier tamaño y codificación. Se procesa en tu navegador.</span>
+              </label>
+            </div>
+
+            <div class="mt-5 grid sm:grid-cols-2 gap-3" data-src="ejemplos" hidden id="samples"></div>
+
+            <div class="mt-5" data-src="escribir" hidden>
+              <textarea class="field" id="own-text" rows="6" placeholder="Escribe o pega aquí cualquier texto…" aria-label="Texto propio"></textarea>
+              <div class="mt-3 flex flex-wrap items-center gap-3">
+                <button class="btn btn-glass" type="button" id="own-use">Usar este texto</button>
+                <span class="text-[13px] text-[var(--text-4)]" id="own-count">0 caracteres</span>
+              </div>
+            </div>
+
+            <!-- Documento cargado -->
+            <div id="doc-card" class="mt-6" hidden>
+              <div class="rounded-[18px] border border-[var(--line-strong)] bg-white/[0.03] p-4 sm:p-5">
+                <div class="flex flex-wrap items-start gap-4 justify-between">
+                  <div class="flex gap-3 min-w-0">
+                    <span class="icon-tile shrink-0" data-icon-inline="file"></span>
+                    <div class="min-w-0">
+                      <div class="font-semibold text-[var(--text-1)] truncate" id="doc-name"></div>
+                      <div class="text-[13px] text-[var(--text-3)]" id="doc-meta"></div>
+                    </div>
+                  </div>
+                  <label class="flex items-center gap-2.5 text-[13px] text-[var(--text-3)]">Un símbolo es
+                    <select id="mode" class="field h-9 w-auto pr-9 text-[13.5px]">
+                      <option value="auto">Automático</option>
+                      <option value="char">un carácter Unicode</option>
+                      <option value="byte">un byte</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="mt-4 preview-box" id="doc-preview"></div>
+                <div class="mt-4 flex flex-wrap gap-3 items-center">
+                  <button class="btn btn-cta" type="button" id="btn-analyze">Analizar frecuencias</button>
+                  <span class="text-[13px] text-[var(--text-3)]" id="doc-hint"></span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ========================================================
+               2. ANALIZAR
+               ======================================================== -->
+          <section id="analizar" class="panel glass" aria-labelledby="t-analizar">
+            <div class="panel-head">
+              <div class="flex gap-4">
+                <span class="panel-num">2</span>
+                <div>
+                  <h2 id="t-analizar">Frecuencias</h2>
+                  <p class="panel-sub">Cuántas veces aparece cada símbolo. Es todo lo que el árbol necesita.</p>
+                </div>
+              </div>
+            </div>
+            <p class="locked-note" data-locked>Disponible cuando elijas un texto en el paso 1.</p>
+            <div data-body hidden>
+              <div class="grid grid-cols-1 grid-cols-2 md:grid-cols-5 gap-3" id="an-stats"></div>
+              <div class="mt-5 mini-card p-4 sm:p-5">
+                <div class="flex flex-wrap justify-between gap-2 mini-label"><span id="histo-title">Símbolos más frecuentes</span><span>Pasa el cursor sobre una barra</span></div>
+                <div class="histo mt-3" id="histo"></div>
+              </div>
+              <div class="mt-5 flex flex-wrap gap-3 items-center justify-between">
+                <div class="relative w-full sm:w-72">
+                  <span class="field-icon" data-icon-inline="search"></span>
+                  <input class="field h-10 pl-11 text-[14px]" id="freq-q" type="search" placeholder="Buscar un símbolo" aria-label="Buscar en la tabla de frecuencias">
+                </div>
+                <span class="text-[13px] text-[var(--text-3)]" id="freq-count"></span>
+              </div>
+              <div class="mt-3 tbl-wrap">
+                <table class="tbl" id="freq-tbl">
+                  <thead><tr>
+                    <th><button type="button" data-sort="sym">Símbolo</button></th>
+                    <th>Código de carácter</th>
+                    <th class="num"><button type="button" data-sort="freq">Frecuencia</button></th>
+                    <th class="num">Porcentaje</th>
+                    <th class="w-[28%]">Distribución</th>
+                  </tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="mt-6"><button class="btn btn-cta" type="button" id="btn-tree">Construir el árbol</button></div>
+            </div>
+          </section>
+
+          <!-- ========================================================
+               3. ÁRBOL
+               ======================================================== -->
+          <section id="arbol" class="panel glass" aria-labelledby="t-arbol">
+            <div class="panel-head">
+              <div class="flex gap-4">
+                <span class="panel-num">3</span>
+                <div>
+                  <h2 id="t-arbol">Árbol de Huffman</h2>
+                  <p class="panel-sub">En cada paso se sacan de la cola de prioridad los dos nodos de menor frecuencia y se unen bajo un padre nuevo.</p>
+                </div>
+              </div>
+            </div>
+            <p class="locked-note" data-locked>Disponible cuando analices las frecuencias en el paso 2.</p>
+            <div data-body hidden>
+              <div id="tree-stage"></div>
+              <div class="mt-4 mini-card p-4">
+                <div class="flex flex-wrap justify-between gap-x-4 gap-y-1 mini-label">
+                  <span>Cola de prioridad, <span id="q-count"></span></span>
+                  <span class="text-[var(--text-4)]">En ámbar, los dos que se unen en el siguiente paso. Con borde punteado, los nodos internos.</span>
+                </div>
+                <div class="queue mt-3" id="queue"></div>
+              </div>
+              <p class="narration mt-4" id="narration" aria-live="polite"></p>
+              <div class="transport mt-4">
+                <button class="t-btn" type="button" id="t-first" aria-label="Volver al inicio" data-icon-inline="first"></button>
+                <button class="t-btn" type="button" id="t-prev" aria-label="Paso anterior" data-icon-inline="prev"></button>
+                <button class="t-btn is-primary" type="button" id="t-play" aria-label="Reproducir"></button>
+                <button class="t-btn" type="button" id="t-next" aria-label="Paso siguiente" data-icon-inline="next"></button>
+                <button class="t-btn" type="button" id="t-last" aria-label="Ir al árbol completo" data-icon-inline="last"></button>
+                <input type="range" class="scrub" id="t-scrub" min="0" max="0" value="0" aria-label="Paso de la construcción">
+                <span class="text-[13px] text-[var(--text-3)] tabular-nums min-w-16 text-right" id="t-count">0 / 0</span>
+                <label class="flex items-center gap-2 text-[13px] text-[var(--text-3)] w-full sm:w-auto">Velocidad <input type="range" class="range w-28" id="t-speed" min="1" max="10" value="6"></label>
+              </div>
+              <div class="mt-6"><button class="btn btn-cta" type="button" id="btn-codes">Ver los códigos</button></div>
+            </div>
+          </section>
+
+          <!-- ========================================================
+               4. CÓDIGOS
+               ======================================================== -->
+          <section id="codigos" class="panel glass" aria-labelledby="t-codigos">
+            <div class="panel-head">
+              <div class="flex gap-4">
+                <span class="panel-num">4</span>
+                <div>
+                  <h2 id="t-codigos">Códigos binarios</h2>
+                  <p class="panel-sub">El camino de la raíz a cada hoja: izquierda 0, derecha 1. Selecciona un símbolo para ver su camino.</p>
+                </div>
+              </div>
+            </div>
+            <p class="locked-note" data-locked>Disponible cuando construyas el árbol en el paso 3.</p>
+            <div data-body hidden>
+              <div class="grid grid-cols-1 grid-cols-2 md:grid-cols-4 gap-3" id="code-stats"></div>
+              <div class="mt-5 relative w-full sm:w-72">
+                <span class="field-icon" data-icon-inline="search"></span>
+                <input class="field h-10 pl-11 text-[14px]" id="code-q" type="search" placeholder="Buscar un símbolo" aria-label="Buscar en la tabla de códigos">
+              </div>
+              <div class="mt-3 tbl-wrap max-h-[380px]">
+                <table class="tbl" id="code-tbl">
+                  <thead><tr><th>Símbolo</th><th class="num">Frecuencia</th><th>Código</th><th class="num">Longitud</th><th class="num">Bits aportados</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="mini-card p-4 min-w-0">
+                  <div class="mini-label">Camino en el árbol</div>
+                  <div class="mt-3 text-[13.5px] leading-relaxed" id="path-box"><span class="text-[var(--text-4)]">Selecciona un símbolo de la tabla.</span></div>
+                </div>
+                <div class="mini-card p-4 min-w-0">
+                  <div class="mini-label">Así se codifica el inicio del texto</div>
+                  <div class="tape mt-3 max-h-[260px] overflow-auto" id="tape"></div>
+                </div>
+              </div>
+              <div class="mt-6"><button class="btn btn-cta" type="button" id="btn-compress">Comprimir y generar el .hfz</button></div>
+            </div>
+          </section>
+
+          <!-- ========================================================
+               5. COMPRIMIR
+               ======================================================== -->
+          <section id="comprimir" class="panel glass" aria-labelledby="t-comprimir">
+            <div class="panel-head">
+              <div class="flex gap-4">
+                <span class="panel-num">5</span>
+                <div>
+                  <h2 id="t-comprimir">Compresión y métricas</h2>
+                  <p class="panel-sub">El archivo .hfz guarda un encabezado con la tabla de frecuencias y, después, los bits empaquetados.</p>
+                </div>
+              </div>
+            </div>
+            <p class="locked-note" data-locked>Disponible cuando generes los códigos en el paso 4.</p>
+            <div data-body hidden>
+              <div class="grid grid-cols-1 grid-cols-2 lg:grid-cols-4 gap-3" id="metrics"></div>
+              <div class="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="mini-card p-5">
+                  <div class="mini-label">Tamaño del archivo</div>
+                  <div class="mt-4 space-y-4" id="sizes"></div>
+                </div>
+                <div class="mini-card p-5">
+                  <div class="mini-label">Bits por símbolo</div>
+                  <div class="mt-4 space-y-3.5" id="cmp"></div>
+                </div>
+              </div>
+              <div class="mt-6 flex flex-wrap gap-3">
+                <button class="btn btn-cta" type="button" id="btn-download"></button>
+                <button class="btn btn-glass" type="button" id="btn-md"></button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-root"></div>
+
+  <script src="js/config.js" defer></script>
+  <script src="js/huffman.js" defer></script>
+  <script src="js/samples.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/tree-view.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>

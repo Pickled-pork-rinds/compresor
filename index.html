@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Huffly: compresión de texto con Huffman</title>
+  <meta name="description" content="Comprime textos con el algoritmo de Huffman y mira el árbol crecer paso a paso.">
+  <meta name="theme-color" content="#0b0930">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Huffly: comprime libros y entiende cada bit">
+  <meta property="og:description" content="Algoritmo de Huffman con técnica voraz: frecuencias, árbol, códigos y formato propio .hfz.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+
+  <script>document.documentElement.classList.add('js')</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.2/dist/index.global.js"></script>
+  <style type="text/tailwindcss">
+    @theme static {
+      --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+  </style>
+  <noscript><style>html.js body { opacity: 1 }</style></noscript>
+</head>
+<body>
+  <div class="bg-aurora" aria-hidden="true"></div>
+  <div class="bg-grain" aria-hidden="true"></div>
+  <a href="#contenido" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[90] btn btn-glass btn-sm">Saltar al contenido</a>
+
+  <div id="nav-root" data-active=""></div>
+
+  <main id="contenido">
+    <!-- ================================================================
+         HERO
+         ================================================================ -->
+    <section class="relative pt-28 pb-20 sm:pt-36 lg:pt-40 lg:pb-28">
+      <div class="bg-grid" aria-hidden="true"></div>
+      <div class="shell grid grid-cols-1 lg:grid-cols-[1.08fr_1fr] gap-20 lg:gap-12 items-center">
+        <div class="intro max-w-xl">
+          <a href="app.html#arbol" class="pill-new w-fit max-w-full">
+            <b>Nuevo</b><span class="truncate">Mira el árbol crecer unión por unión</span>
+            <svg class="arrow shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+
+          <h1 class="display mt-7" id="hero-title">Comprime libros enteros y entiende cada bit.</h1>
+
+          <div class="mt-5" aria-hidden="true">
+            <div class="hero-bits" id="hero-bits"></div>
+            <p class="mt-1 text-[13px] text-[var(--text-4)]" id="hero-bits-cap">&nbsp;</p>
+          </div>
+
+          <p class="lead mt-5 max-w-[34rem]">
+            Huffly cuenta las letras de cualquier texto, construye su árbol de Huffman con la técnica voraz y lo guarda
+            en un archivo propio .hfz, listo para descargar.
+          </p>
+
+          <div class="mt-9 flex flex-col sm:flex-row gap-3">
+            <a href="app.html#fuente" class="btn btn-cta btn-lg">Comprimir un libro</a>
+            <a href="#como-funciona" class="btn btn-glass btn-lg">Ver cómo funciona</a>
+          </div>
+
+          <ul class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-[14px] text-[var(--text-2)]">
+            <li class="flex items-center gap-2.5"><span class="check-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>No se requiere tarjeta de crédito</li>
+            <li class="flex items-center gap-2.5"><span class="check-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Tus archivos no salen del navegador</li>
+            <li class="flex items-center gap-2.5"><span class="check-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Código abierto</li>
+          </ul>
+        </div>
+
+        <!-- Mockup interactivo: comprime en vivo lo que escribas -->
+        <div class="relative intro-late lg:pl-4" id="mock-wrap">
+          <div class="float-chip glass-solid left-4 -top-12 sm:-left-8" style="animation-delay:-2.5s">
+            <span class="check-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <div>Descompresión verificada<small id="chip-crc">CRC-32 coincide</small></div>
+          </div>
+          <div class="float-chip glass-solid right-4 -bottom-12 sm:-right-8">
+            <span class="icon-tile w-8 h-8 rounded-[9px]"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M10.6 7.1 7.2 15.8"/><path d="m13.4 7.1 3.4 8.7"/></svg></span>
+            <div><span id="chip-tree">Árbol de 9 nodos</span><small id="chip-tree-sub">código más largo: 3 bits</small></div>
+          </div>
+
+          <div class="mockup glass edge-glow" id="mockup">
+            <div class="mockup-bar">
+              <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+              <div class="url-pill" aria-hidden="true">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                huffly.app/estudio
+              </div>
+              <span class="flex items-center gap-1.5 text-[12px] text-[var(--text-3)]"><span class="live-dot"></span>En vivo</span>
+            </div>
+
+            <div class="p-4 sm:p-5 space-y-3.5">
+              <div class="relative">
+                <span class="field-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.38 3.62a1 1 0 0 1 3 3L7.37 18.64a2 2 0 0 1-.86.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.86z"/></svg></span>
+                <input id="mock-input" class="mock-input" value="abracadabra" maxlength="48" aria-label="Escribe un texto corto para comprimirlo en vivo" autocomplete="off" spellcheck="false">
+              </div>
+
+              <div class="grid grid-cols-[1fr_1.3fr] gap-3">
+                <div class="mini-card p-3">
+                  <div class="mini-label mb-2.5">Frecuencias</div>
+                  <div id="mock-freq" class="space-y-1.5"></div>
+                </div>
+                <div class="mini-card p-2 flex flex-col">
+                  <div class="mini-label px-1 pt-1">Árbol de Huffman</div>
+                  <svg id="mock-tree" class="mini-tree w-full h-auto mt-auto" role="img" aria-label="Árbol de Huffman del texto escrito"></svg>
+                </div>
+              </div>
+
+              <div class="mini-card p-3">
+                <div class="flex justify-between mini-label mb-1.5"><span>Bits codificados</span><span id="mock-bitcount"></span></div>
+                <div id="mock-bits" class="bitstream"></div>
+              </div>
+
+              <div class="flex gap-2">
+                <div class="metric-chip"><b id="m-orig">0</b><span>bits originales</span></div>
+                <div class="metric-chip"><b id="m-huff">0</b><span>bits Huffman</span></div>
+                <div class="metric-chip"><b id="m-save" style="color:var(--mint)">0 %</b><span>menos bits</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         CLÁSICOS (insignias de confianza)
+         ================================================================ -->
+    <section class="py-9 border-y border-[var(--line)] bg-white/[0.015]">
+      <div class="shell flex flex-col md:flex-row md:items-center gap-5 md:gap-8">
+        <p class="text-[14px] text-[var(--text-3)] shrink-0 md:max-w-56 leading-snug">Funciona con cualquier .txt de Project Gutenberg, como estos clásicos.</p>
+        <div class="marquee flex-1 min-w-0" aria-hidden="true"><div class="marquee-track" id="marquee"></div></div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         CÓMO FUNCIONA (el ejemplo del pizarrón)
+         ================================================================ -->
+    <section id="como-funciona" class="py-24 sm:py-32">
+      <div class="shell">
+        <div class="max-w-2xl reveal">
+          <h2 class="title">Del texto a los bits en cuatro decisiones</h2>
+          <p class="lead mt-4">
+            Huffman da códigos cortos a los símbolos frecuentes y códigos largos a los raros.
+            Síguelo con el ejemplo del pizarrón, <span class="mono text-[var(--text-1)]">abbacabbcd</span>.
+          </p>
+        </div>
+        <div class="mt-12 grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 lg:gap-6">
+          <div class="grid grid-cols-2 lg:flex lg:flex-col gap-2 lg:gap-1" role="tablist" aria-label="Pasos del algoritmo" id="steps">
+            <button class="step-tab is-active" type="button" role="tab" aria-selected="true" data-step="0">
+              <span class="step-num">1</span>
+              <span><span class="block text-[16px] font-semibold text-[var(--text-1)]">Contar</span><span class="hidden lg:block text-[14px] text-[var(--text-3)] leading-snug mt-0.5">Cuántas veces aparece cada símbolo.</span></span>
+            </button>
+            <button class="step-tab" type="button" role="tab" aria-selected="false" data-step="1">
+              <span class="step-num">2</span>
+              <span><span class="block text-[16px] font-semibold text-[var(--text-1)]">Unir los dos menores</span><span class="hidden lg:block text-[14px] text-[var(--text-3)] leading-snug mt-0.5">La decisión voraz, repetida hasta tener un solo árbol.</span></span>
+            </button>
+            <button class="step-tab" type="button" role="tab" aria-selected="false" data-step="2">
+              <span class="step-num">3</span>
+              <span><span class="block text-[16px] font-semibold text-[var(--text-1)]">Leer los códigos</span><span class="hidden lg:block text-[14px] text-[var(--text-3)] leading-snug mt-0.5">Cada camino de la raíz a una hoja: izquierda 0, derecha 1.</span></span>
+            </button>
+            <button class="step-tab" type="button" role="tab" aria-selected="false" data-step="3">
+              <span class="step-num">4</span>
+              <span><span class="block text-[16px] font-semibold text-[var(--text-1)]">Empaquetar</span><span class="hidden lg:block text-[14px] text-[var(--text-3)] leading-snug mt-0.5">Los códigos se pegan y se guardan de 8 en 8 bits.</span></span>
+            </button>
+          </div>
+          <div class="glass edge-glow stage rounded-[24px] p-5 sm:p-8" id="stage" role="tabpanel" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         FORMATO .hfz
+         ================================================================ -->
+    <section id="formato" class="py-20 sm:py-28">
+      <div class="shell grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] gap-10 lg:gap-14 items-start">
+        <div class="reveal lg:sticky lg:top-28">
+          <h2 class="title">Un formato propio que se explica solo</h2>
+          <p class="lead mt-4">
+            Un archivo <span class="mono text-[var(--text-1)]">.hfz</span> guarda lo necesario para reconstruir el árbol sin el texto original:
+            la tabla de frecuencias, cuántos bits son válidos y una huella CRC-32 para comprobar la integridad.
+          </p>
+          <p class="mt-5 text-[14.5px] text-[var(--text-3)] leading-relaxed">
+            Toca o pasa el cursor por los bytes. Es el archivo real de <span class="mono text-[var(--text-2)]">abbacabbcd</span>, generado ahora mismo en tu navegador.
+          </p>
+          <a class="btn btn-glass mt-8" id="spec-link" href="#" target="_blank" rel="noopener">Leer la especificación completa</a>
+        </div>
+        <div class="glass edge-glow p-5 sm:p-7 rounded-[24px]">
+          <div class="flex items-center justify-between gap-4 mb-5">
+            <span class="mono text-[13px] text-[var(--text-1)]">pizarron.hfz</span>
+            <span class="text-[13px] text-[var(--text-3)]" id="fmt-size"></span>
+          </div>
+          <div class="hexmap" id="fmt-hex" style="--cols:12"></div>
+          <div class="mt-6 grid gap-y-0.5" id="fmt-fields"></div>
+          <div class="mt-5 rounded-xl px-4 py-3 text-[13.5px] bg-white/[0.03] border border-[var(--line)] min-h-[48px]" id="fmt-desc">
+            <span class="text-[var(--text-3)]">Selecciona un campo para ver qué guarda.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         LLAMADA FINAL
+         ================================================================ -->
+    <section class="pt-6">
+      <div class="shell">
+        <div class="cta-band glass edge-glow relative px-6 py-14 sm:px-14 sm:py-20 text-center">
+          <h2 class="title max-w-2xl mx-auto relative z-[1]">Tu primer archivo .hfz en menos de un minuto</h2>
+          <p class="lead mt-4 max-w-xl mx-auto relative z-[1]">Sube un texto, comprímelo y descárgalo. Sin registro y sin instalar nada.</p>
+          <div class="mt-9 flex flex-col sm:flex-row justify-center gap-3 relative z-[1]">
+            <a class="btn btn-cta btn-lg" href="app.html#fuente">Comprimir un libro</a>
+            <a class="btn btn-glass btn-lg" href="#formato">Conocer el formato .hfz</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="footer-root"></div>
+
+  <script src="js/config.js" defer></script>
+  <script src="js/huffman.js" defer></script>
+  <script src="js/samples.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/tree-view.js" defer></script>
+  <script src="js/landing.js" defer></script>
+</body>
+</html>
