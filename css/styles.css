@@ -6,7 +6,7 @@
    fondo animado, vidrio esmerilado, botones, el mockup, el árbol, tablas...
 
    El orden de capas permite que una clase de Tailwind (utilities) siempre
-   pueda sobrescribir un componente de aquí (components).
+   pueda sobrescribir un componente de aquí (components). 
    ========================================================================== */
 @layer theme, base, components, utilities;
 
