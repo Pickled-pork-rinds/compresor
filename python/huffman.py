@@ -1,6 +1,6 @@
 """
 huffman.py — Núcleo del algoritmo de Huffman (técnica voraz) en Python. 
-
+   
 · Implementado a mano: NO usa zip, gzip, zlib ni otra librería de compresión.
   (binascii.crc32 sólo calcula una suma de verificación; no comprime nada.)
 · Genera archivos .hfz idénticos byte a byte a los de la versión web
