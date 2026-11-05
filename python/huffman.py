@@ -1,4 +1,4 @@
-"""
+""" 
 huffman.py — Núcleo del algoritmo de Huffman (técnica voraz) en Python. 
    
 · Implementado a mano: NO usa zip, gzip, zlib ni otra librería de compresión.
