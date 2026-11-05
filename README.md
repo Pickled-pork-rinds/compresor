@@ -63,5 +63,5 @@ cd python && python -m unittest -v test_huffman
 
 Usamos Claude (Anthropic) para la estructura inicial, el código y la documentación. Lo validamos con las
 pruebas automáticas, la prueba cruzada entre la versión web y la de Python, y revisando el flujo completo
-en el navegador.
+en el navegador. 
    
