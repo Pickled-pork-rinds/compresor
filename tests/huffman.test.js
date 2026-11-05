@@ -1,5 +1,5 @@
 /* ==========================================================================
-   tests/huffman.test.js — Pruebas del núcleo de Huffman
+   tests/huffman.test.js — Pruebas del núcleo de Huffman 
    Ejecutar desde la raíz del proyecto:   node tests/huffman.test.js
    Regenerar archivos de prueba cruzada:  node tests/huffman.test.js --fixtures
    ========================================================================== */
