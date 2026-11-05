@@ -1,5 +1,5 @@
 /* ==========================================================================
-   js/ui.js — Piezas compartidas por las dos páginas
+   js/ui.js — Piezas compartidas por las dos páginas 
    --------------------------------------------------------------------------
    · Íconos SVG (window.UI.icon)
    · Barra de navegación, menú móvil y pie de página (se insertan aquí para
