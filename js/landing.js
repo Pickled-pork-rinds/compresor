@@ -305,4 +305,4 @@
     const file = howItWorks();
     formatSection(file.file);
   });
-})();
+})(); 
