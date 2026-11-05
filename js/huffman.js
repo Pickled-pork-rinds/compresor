@@ -16,7 +16,7 @@
    Regla de desempate (para que el árbol se pueda reconstruir EXACTAMENTE):
    se saca primero el nodo de menor frecuencia y, si empatan, el que se creó
    antes (id menor). Las hojas se crean en orden ascendente de símbolo.
-   El formato completo está documentado en docs/formato-hfz.md
+   El formato completo está documentado en docs/formato-hfz.md  
    ========================================================================== */
 (function (root) {
   'use strict';
