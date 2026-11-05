@@ -3,7 +3,7 @@
    --------------------------------------------------------------------------
    Flujo:  1 Fuente → 2 Analizar → 3 Árbol → 4 Códigos → 5 Comprimir
    El estado vive en el objeto S. Cada paso desbloquea el siguiente.
-   Los cálculos los hace js/huffman.js; aquí sólo se muestran.
+   Los cálculos los hace js/huffman.js; aquí sólo se muestran. 
    ========================================================================== */
 (function () {
   'use strict';
