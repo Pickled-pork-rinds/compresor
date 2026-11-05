@@ -1,7 +1,7 @@
 """
 test_huffman.py — Pruebas de la versión en Python.
 
-Ejecutar desde la carpeta python/:
+Ejecutar desde la carpeta python/: 
     python -m unittest -v test_huffman
 
 Incluye la prueba cruzada: los archivos de tests/fixtures/*.hfz fueron
