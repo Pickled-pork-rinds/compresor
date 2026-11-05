@@ -381,3 +381,4 @@ def vista_bits(archivo: bytes, cab: dict, max_bits: int = 256) -> str:
     cuerpo = archivo[cab["offset_datos"]:cab["offset_datos"] + (n + 7) // 8]
     cadena = "".join(f"{b:08b}" for b in cuerpo)[:n]
     return " ".join(cadena[i:i + 8] for i in range(0, len(cadena), 8))
+     
