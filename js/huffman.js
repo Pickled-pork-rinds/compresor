@@ -20,7 +20,7 @@
    ========================================================================== */
 (function (root) {
   'use strict';
-
+ 
   const MAGIC = [0x48, 0x46, 0x5a]; // "HFZ"
   const VERSION = 1;
   const FLAG_CHAR = 0x01;
