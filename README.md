@@ -4,22 +4,28 @@ Compresor de texto con el **algoritmo de Huffman** (técnica voraz), con formato
 inspector, verificación de integridad, búsqueda en Project Gutenberg y un laboratorio del **árbol de
 expansión mínima** (Kruskal y Prim). Incluye una versión web y una aplicación de escritorio en Python.
 
-**Análisis de Algoritmos · 2026B** · CUCEI, Universidad de Guadalajara
+**Análisis de Algoritmos · 2026B** · CUCEI, Universidad de Guadalajara · Equipo Pickled Pork Rinds
+
+![Portada de Huffly](docs/capturas/00-portada.jpg)
 
 | | |
 |---|---|
 | Aplicación publicada | `https://TU-PROYECTO.vercel.app` ← *pegar aquí la URL del deployment* |
-| Repositorio | `https://github.com/juanmanuel782/huffly` |
+| Repositorio | https://github.com/Pickled-pork-rinds/compresor |
 | Tablero (GitHub Projects) | *pegar aquí la URL del tablero* |
+| Reporte técnico (PDF) | [docs/reporte-tecnico.pdf](docs/reporte-tecnico.pdf) |
 
 ## Integrantes
 
-| Nombre | Responsabilidades principales |
-|---|---|
-| Juan Manuel Murillo López | *completar* |
-| Integrante 2 | *completar* |
+| Integrante | GitHub | Rol Scrum | Responsabilidades principales |
+|---|---|---|---|
+| Erin Fernando Cuellar Gonzalez | [@erincuellar2159](https://github.com/erincuellar2159) | Desarrollador | Descompresión, inspector, verificación de integridad y pruebas |
+| Brian Ulises Vazquez Hernandez | [@brianvazquez999](https://github.com/brianvazquez999) | Scrum Master y desarrollador | Repositorio y tablero, formato `.hfz`, proxy de Gutenberg y despliegue |
+| Francisco Javier Quintero Magaña | [@franciscoquintero2035-desk](https://github.com/franciscoquintero2035-desk) | Desarrollador | Interfaz web, animación del árbol y laboratorio de expansión mínima |
+| Juan Manuel Murillo Lopez | [@juanmanuel782](https://github.com/juanmanuel782) | Product Owner y desarrollador | Núcleo del algoritmo, versión en Python (con interfaz gráfica) y documentación |
 
-> Los nombres que aparecen en el pie de página de la web se editan en `js/config.js`.
+El reparto completo por historia de usuario y por tarea del tablero está en el [backlog](docs/backlog.md).
+Los nombres del pie de página de la web se editan en `js/config.js`.
 
 ---
 
@@ -97,7 +103,7 @@ byte, y las versiones web y Python generaron el mismo `.hfz`.
 | Hamlet | byte | 159.06 KB | 91.95 KB | 67.11 KB | 42.2 % | 1.73 : 1 | 67 | 4.61 (4.57) | 16 ms |
 | Moby Dick | byte | 1.19 MB | 695.04 KB | 518.82 KB | 42.7 % | 1.75 : 1 | 82 | 4.58 (4.54) | 118 ms |
 | Biblia King James | byte | 4.13 MB | 2.37 MB | 1.77 MB | 42.7 % | 1.75 : 1 | 75 | 4.58 (4.54) | 409 ms |
-| *Libro de Gutenberg elegido por el equipo* | | | | | | | | | |
+| The Man Who Was Thursday (archivo nuevo, prueba 4) | byte | 313.01 KB | 176.64 KB | 136.38 KB | 43.6 % | 1.77 : 1 | 77 | 4.51 (4.47) | 59 ms |
 
 Los textos muy cortos **crecen**: el encabezado guarda la tabla de frecuencias y pesa más que lo que se
 ahorra. En los libros completos el encabezado es menor al 0.5 % del archivo y la reducción ronda el 42 %,
@@ -227,15 +233,19 @@ huffly/
 │   ├── app_gui.py          Aplicación de escritorio (tkinter)
 │   ├── servidor.py         Servidor local con el proxy
 │   └── test_huffman.py     Pruebas de Python
+├── scripts/
+│   └── backlog_a_github.py Carga el backlog como issues y tarjetas del tablero
 ├── tests/
 │   ├── huffman.test.js     Pruebas del núcleo JS
 │   ├── medir.js            Métricas de compresión en Markdown
 │   └── fixtures/           Archivos .hfz creados por la web para la prueba cruzada
 └── docs/
     ├── formato-hfz.md      Especificación del formato
-    ├── pruebas.md          Plan y evidencias de pruebas
-    ├── backlog.md          Backlog para GitHub Projects
-    └── capturas/           Aquí van las capturas de funcionamiento
+    ├── pruebas.md          Las 4 pruebas mínimas con resultados y capturas
+    ├── reporte-tecnico.pdf Reporte técnico de la actividad
+    ├── backlog.md          Backlog Scrum: épicas, historias, puntos y sprints
+    ├── backlog.csv         El mismo backlog en tabla (lo usa el script)
+    └── capturas/           Capturas de funcionamiento (web, app de escritorio y pruebas)
 ```
 
 ### Dónde está cada cosa (para la defensa)
@@ -253,17 +263,42 @@ huffly/
 | ¿Kruskal y Prim? | `js/mst.js` / `python/mst.py` |
 | ¿Cómo se conecta con Gutenberg? | `js/gutenberg.js` (cliente) y `api/gutenberg.py` (proxy) |
 
+## Organización del equipo
+
+Trabajamos con Scrum en dos sprints de una semana. El [backlog](docs/backlog.md) tiene 8 épicas y 32
+historias de usuario (115 puntos) con criterios de aceptación, responsable, prioridad y estado. En el tablero
+cada historia se dividió en tareas de 1 a 3 puntos: **80 tareas (T-01 a T-80)**, 40 por sprint.
+
+| Sprint | Objetivo | Puntos |
+|---|---|---:|
+| Sprint 1 | Comprimir un `.txt` de punta a punta: frecuencias, árbol, códigos y `.hfz` descargable, con la portada | 61 |
+| Sprint 2 | Inspector, descompresión y verificación, Project Gutenberg, expansión mínima, app de escritorio y publicación | 54 |
+
+El tablero de GitHub Projects usa las columnas Backlog → Ready → In progress → In review → Done
+(equivalentes a Backlog → Por hacer → En progreso → En revisión → Terminado). Para cargarlo:
+
+```bash
+python scripts/backlog_a_github.py --repo Pickled-pork-rinds/compresor --estado final
+```
+
 ## Pruebas y evidencias
 
-Plan completo y resultados en **[docs/pruebas.md](docs/pruebas.md)**: texto pequeño, libro de Gutenberg,
-integridad y archivo nuevo. Las capturas van en `docs/capturas/`.
+Resultados y capturas en **[docs/pruebas.md](docs/pruebas.md)**; las imágenes están en `docs/capturas/`.
+
+| Prueba | Entrada | Resultado |
+|---|---|---|
+| 1. Texto pequeño | `abbacabbcd` | Frecuencias, árbol y códigos iguales al cálculo a mano (19 bits) |
+| 2. Libro de Project Gutenberg | *Alice's Adventures in Wonderland*, 141.01 KB | 81.11 KB, reducción de 42.5 % |
+| 3. Integridad | El `.hfz` anterior, abierto solo en el inspector | Tamaño, CRC-32, SHA-256 y byte a byte idénticos |
+| 4. Archivo nuevo | *The Man Who Was Thursday*, 313.01 KB | 176.64 KB, reducción de 43.6 %, recuperado idéntico |
+| Extra | `.hfz` de la web abierto en la app de Python | Descomprimido idéntico |
+| Automáticas | `node tests/huffman.test.js` y `unittest` | 16 + 11 pruebas correctas |
 
 ## Uso de IA y herramientas
 
 | Herramienta | Para qué se usó | Cómo se validó |
 |---|---|---|
 | Claude (Anthropic) | Estructura inicial, código de la web y de Python, diseño visual y documentación | Pruebas automáticas (JS y Python), prueba cruzada byte a byte entre ambas versiones, revisión manual del flujo completo en navegador y en la app de escritorio |
-| *completar* | | |
 
 > El equipo debe poder explicar cada función; la tabla «Dónde está cada cosa» sirve de guía.
 

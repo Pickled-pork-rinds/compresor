@@ -15,6 +15,10 @@ Pestañas
   3. Inspector        abrir un .hfz SIN el original, ver su estructura y
                       descomprimirlo
   4. Expansión mínima Kruskal y Prim paso a paso
+
+Equipo: Erin Fernando Cuellar Gonzalez, Brian Ulises Vazquez Hernandez,
+Francisco Javier Quintero Magaña y Juan Manuel Murillo Lopez.
+Análisis de Algoritmos 2026B · CUCEI, Universidad de Guadalajara.
 """
 import hashlib
 import importlib.util
@@ -33,6 +37,13 @@ import huffman as H  # noqa: E402
 import mst as M  # noqa: E402
 
 RAIZ = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+EQUIPO = (
+    "Erin Fernando Cuellar Gonzalez",
+    "Brian Ulises Vazquez Hernandez",
+    "Francisco Javier Quintero Magaña",
+    "Juan Manuel Murillo Lopez",
+)
 
 # El buscador de Gutenberg es el mismo módulo que usa la versión web (api/)
 try:
@@ -185,6 +196,14 @@ class App:
         tk.Label(top, text="Huffly Desktop", bg=C["bg"], fg=C["text"], font=self.FT).pack(side="left", padx=(10, 12))
         tk.Label(top, text="Compresión de Huffman con técnica voraz y árbol de expansión mínima",
                  bg=C["bg"], fg=C["text3"], font=self.F).pack(side="left", pady=(4, 0))
+        ttk.Button(top, text="Equipo", command=self.acerca_de).pack(side="right")
+
+    def acerca_de(self):
+        messagebox.showinfo(
+            "Equipo",
+            "Huffly — Huffman Web Compressor\n\n" + "\n".join(EQUIPO)
+            + "\n\nAnálisis de Algoritmos · 2026B\nCUCEI, Universidad de Guadalajara",
+            parent=self.root)
 
     def _barra_estado(self):
         barra = tk.Frame(self.root, bg=C["bg"])

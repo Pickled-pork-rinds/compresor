@@ -11,10 +11,15 @@ window.HUFFLY_CONFIG = {
   institucion: 'CUCEI, Universidad de Guadalajara',
 
   // Integrantes del equipo (aparecen en el pie de página de las 3 páginas)
-  equipo: ['Juan Manuel Murillo López', 'Integrante 2'],
+  equipo: [
+    'Erin Fernando Cuellar Gonzalez',
+    'Brian Ulises Vazquez Hernandez',
+    'Francisco Javier Quintero Magaña',
+    'Juan Manuel Murillo Lopez',
+  ],
 
   // Enlaces del proyecto
-  repositorio: 'https://github.com/juanmanuel782/huffly',
+  repositorio: 'https://github.com/Pickled-pork-rinds/compresor',
   tablero: '', // URL de GitHub Projects (opcional, se muestra en el pie)
 
   // Inicio de sesión con Google (opcional y gratuito).

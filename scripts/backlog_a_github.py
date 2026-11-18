@@ -1,5 +1,5 @@
 """
-backlog_a_github.py — Carga docs/backlog.csv al repositorio y al tablero de GitHub. 
+backlog_a_github.py — Carga docs/backlog.csv al repositorio y al tablero de GitHub.
 
 Por cada historia de usuario:
   · crea una issue «HU-xx · Título» con la historia, los criterios de aceptación,
@@ -14,8 +14,8 @@ Requisitos (una sola vez):
     3. gh auth refresh -s project        ← permiso para editar tableros
 
 Uso, desde la carpeta del proyecto:
-    python scripts/backlog_a_github.py --repo brianvazquez999/Tecnica_Voraz_Huffman --estado mitad
-    python scripts/backlog_a_github.py --repo brianvazquez999/Tecnica_Voraz_Huffman --estado final
+    python scripts/backlog_a_github.py --repo Pickled-pork-rinds/compresor --estado mitad
+    python scripts/backlog_a_github.py --repo Pickled-pork-rinds/compresor --estado final
     python scripts/backlog_a_github.py --repo … --simular        ← sólo muestra lo que haría
 
 Opciones:
@@ -78,7 +78,7 @@ def cuerpo(h, terminado):
 
 def main():
     ap = argparse.ArgumentParser(description="Carga el backlog al repositorio y al tablero de GitHub.")
-    ap.add_argument("--repo", required=True, help="usuario/repositorio, por ejemplo brianvazquez999/Tecnica_Voraz_Huffman")
+    ap.add_argument("--repo", required=True, help="usuario/repositorio, por ejemplo Pickled-pork-rinds/compresor")
     ap.add_argument("--owner", help="dueño del tablero (por defecto, el dueño del repositorio)")
     ap.add_argument("--proyecto", type=int, help="número del tablero de GitHub Projects")
     ap.add_argument("--estado", choices=["mitad", "final"], default="mitad")
@@ -221,4 +221,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-  
