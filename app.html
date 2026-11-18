@@ -1,12 +1,14 @@
-<!doctype html> 
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Estudio de compresión · Huffly</title>
-  <meta name="description" content="Analiza las frecuencias de un texto, construye el árbol de Huffman paso a paso y comprímelo en un archivo .hfz.">
+  <meta name="description" content="Busca un libro, analiza sus frecuencias, construye el árbol de Huffman, comprime a .hfz, inspecciona el archivo y verifica la descompresión.">
   <meta name="theme-color" content="#0b0930">
   <meta property="og:title" content="Estudio de compresión · Huffly">
+  <meta property="og:image" content="assets/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 
   <script>document.documentElement.classList.add('js')</script>
@@ -19,7 +21,7 @@
     @theme static {
       --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
       --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    }  
+    }
   </style>
   <noscript><style>html.js body { opacity: 1 }</style></noscript>
 </head>
@@ -34,7 +36,7 @@
     <div class="shell">
       <header class="max-w-3xl">
         <h1 class="title">Estudio de compresión</h1>
-        <p class="lead mt-3">Elige un texto, analízalo, construye su árbol de Huffman y comprímelo en un archivo .hfz.</p>
+        <p class="lead mt-3">Elige un texto, analízalo, construye su árbol, comprímelo, inspecciona el archivo y comprueba que recuperas exactamente el original.</p>
       </header>
 
       <!-- Pasos en celular y tableta -->
@@ -64,18 +66,48 @@
                 <span class="panel-num">1</span>
                 <div>
                   <h2 id="t-fuente">Elige un texto</h2>
-                  <p class="panel-sub">Sube un .txt de tu equipo (por ejemplo, un libro descargado de Project Gutenberg), usa un ejemplo o escribe tu propio texto.</p>
+                  <p class="panel-sub">Busca un libro en Project Gutenberg, sube un .txt de tu equipo o usa uno de los ejemplos.</p>
                 </div>
               </div>
             </div>
 
             <div class="segmented" role="tablist" aria-label="Origen del texto" id="src-tabs">
-              <button type="button" role="tab" data-value="archivo" aria-selected="true" data-icon="upload">Subir .txt</button>
+              <button type="button" role="tab" data-value="gutenberg" aria-selected="true" data-icon="book">Project Gutenberg</button>
+              <button type="button" role="tab" data-value="archivo" aria-selected="false" data-icon="upload">Subir .txt</button>
               <button type="button" role="tab" data-value="ejemplos" aria-selected="false" data-icon="flask">Ejemplos</button>
               <button type="button" role="tab" data-value="escribir" aria-selected="false" data-icon="pen">Escribir</button>
             </div>
 
-            <div class="mt-5" data-src="archivo">
+            <div class="mt-5" data-src="gutenberg">
+              <form id="gb-form" class="grid sm:grid-cols-[minmax(0,1fr)_170px_auto] gap-2.5" autocomplete="off">
+                <div class="relative">
+                  <span class="field-icon" data-icon-inline="search"></span>
+                  <input class="field pl-11" id="gb-q" type="search" placeholder="Título, autor o palabra clave" aria-label="Buscar en Project Gutenberg" required>
+                </div>
+                <select class="field" id="gb-lang" aria-label="Idioma">
+                  <option value="">Todos los idiomas</option>
+                  <option value="es" selected>Español</option>
+                  <option value="en">Inglés</option>
+                  <option value="fr">Francés</option>
+                  <option value="pt">Portugués</option>
+                  <option value="it">Italiano</option>
+                  <option value="de">Alemán</option>
+                </select>
+                <button class="btn btn-violet" type="submit" id="gb-btn">Buscar</button>
+              </form>
+              <div class="mt-3 flex flex-wrap items-center gap-2" id="gb-suggest">
+                <span class="text-[13px] text-[var(--text-4)] mr-1">Prueba con</span>
+                <button class="chip" type="button" data-q="Cervantes" data-lang="es">Cervantes</button>
+                <button class="chip" type="button" data-q="Galdós" data-lang="es">Galdós</button>
+                <button class="chip" type="button" data-q="Frankenstein" data-lang="">Frankenstein</button>
+                <button class="chip" type="button" data-q="Sherlock Holmes" data-lang="en">Sherlock Holmes</button>
+                <button class="chip" type="button" data-q="Poe" data-lang="">Edgar Allan Poe</button>
+              </div>
+              <div class="mt-5 space-y-2.5" id="gb-results" aria-live="polite"></div>
+              <label class="switch mt-5"><input type="checkbox" id="gb-strip"> Quitar el encabezado y la licencia que Gutenberg añade al libro</label>
+            </div>
+
+            <div class="mt-5" data-src="archivo" hidden>
               <label class="dropzone" id="drop">
                 <input type="file" accept=".txt,text/plain" class="sr-only" id="file-in">
                 <span class="icon-tile" data-icon-inline="upload"></span>
@@ -271,9 +303,123 @@
               </div>
               <div class="mt-6 flex flex-wrap gap-3">
                 <button class="btn btn-cta" type="button" id="btn-download"></button>
+                <button class="btn btn-glass" type="button" id="btn-to-inspector"></button>
                 <button class="btn btn-glass" type="button" id="btn-md"></button>
               </div>
             </div>
+          </section>
+
+          <!-- ========================================================
+               6. INSPECTOR
+               ======================================================== -->
+          <section id="inspector" class="panel glass" aria-labelledby="t-inspector">
+            <div class="panel-head">
+              <div class="flex gap-4">
+                <span class="panel-num">6</span>
+                <div>
+                  <h2 id="t-inspector">Inspector de archivos .hfz</h2>
+                  <p class="panel-sub">Abre un archivo comprimido sin el .txt original. Primero examina su estructura; después, descomprímelo.</p>
+                </div>
+              </div>
+            </div>
+            <label class="dropzone" id="hfz-drop">
+              <input type="file" accept=".hfz,application/octet-stream" class="sr-only" id="hfz-in">
+              <span class="icon-tile" data-icon-inline="package"></span>
+              <span class="mt-2 text-[15.5px] font-medium text-[var(--text-1)]">Arrastra un archivo .hfz aquí o haz clic para elegirlo</span>
+              <span class="text-[13.5px] text-[var(--text-3)]">También sirve uno creado con la app de Python.</span>
+            </label>
+            <div id="insp" class="mt-6" hidden>
+              <div class="flex flex-wrap items-center justify-between gap-4 rounded-[18px] border border-[var(--line-strong)] bg-white/[0.03] p-4">
+                <div class="flex gap-3 min-w-0 items-center">
+                  <span class="icon-tile shrink-0" data-icon-inline="package"></span>
+                  <div class="min-w-0">
+                    <div class="font-semibold text-[var(--text-1)] truncate" id="insp-name"></div>
+                    <div class="text-[13px] text-[var(--text-3)]" id="insp-meta"></div>
+                  </div>
+                </div>
+                <div class="flex flex-wrap gap-2" id="insp-badges"></div>
+              </div>
+              <div class="mt-4 grid grid-cols-1 grid-cols-2 lg:grid-cols-4 gap-3" id="insp-metrics"></div>
+              <div class="mt-6 segmented" role="tablist" aria-label="Vista del inspector" id="insp-tabs">
+                <button type="button" role="tab" data-value="estructura" aria-selected="true">Estructura</button>
+                <button type="button" role="tab" data-value="frecuencias" aria-selected="false">Frecuencias</button>
+                <button type="button" role="tab" data-value="codigos" aria-selected="false">Códigos</button>
+                <button type="button" role="tab" data-value="arbol" aria-selected="false">Árbol</button>
+                <button type="button" role="tab" data-value="bits" aria-selected="false">Bits</button>
+              </div>
+              <div class="mt-5" data-insp="estructura">
+                <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-5">
+                  <div class="mini-card p-4 min-w-0">
+                    <div class="flex justify-between mini-label mb-3"><span>Volcado hexadecimal</span><span id="hex-note"></span></div>
+                    <div class="hexdump" id="hexdump"></div>
+                  </div>
+                  <div class="tbl-wrap max-h-[520px]">
+                    <table class="tbl" id="field-tbl">
+                      <thead><tr><th>Campo</th><th class="num">Bytes</th><th>Valor</th></tr></thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-5" data-insp="frecuencias" hidden>
+                <div class="tbl-wrap"><table class="tbl" id="insp-freq"><thead><tr><th>Símbolo</th><th>Código de carácter</th><th class="num">Frecuencia</th><th class="num">Porcentaje</th></tr></thead><tbody></tbody></table></div>
+              </div>
+              <div class="mt-5" data-insp="codigos" hidden>
+                <div class="tbl-wrap"><table class="tbl" id="insp-codes"><thead><tr><th>Símbolo</th><th class="num">Frecuencia</th><th>Código reconstruido</th><th class="num">Longitud</th></tr></thead><tbody></tbody></table></div>
+              </div>
+              <div class="mt-5" data-insp="arbol" hidden>
+                <div id="insp-tree"></div>
+                <p class="mt-3 text-[13px] text-[var(--text-3)]">Reconstruido sólo con la tabla de frecuencias del encabezado, repitiendo las mismas uniones voraces.</p>
+              </div>
+              <div class="mt-5" data-insp="bits" hidden>
+                <div class="mini-card p-4">
+                  <div class="flex flex-wrap justify-between gap-2 mini-label mb-3"><span id="bits-title"></span><span id="bits-note"></span></div>
+                  <div class="bits-box" id="bits-box"></div>
+                </div>
+              </div>
+              <div class="mt-6 flex flex-wrap items-center gap-3">
+                <button class="btn btn-cta" type="button" id="btn-decompress">Descomprimir</button>
+                <span class="text-[13.5px] text-[var(--text-3)]">Recorre el árbol bit a bit y emite un símbolo al llegar a cada hoja.</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ========================================================
+               7. VERIFICAR
+               ======================================================== -->
+          <section id="verificar" class="panel glass" aria-labelledby="t-verificar">
+            <div class="panel-head">
+              <div class="flex gap-4">
+                <span class="panel-num">7</span>
+                <div>
+                  <h2 id="t-verificar">Descompresión y verificación</h2>
+                  <p class="panel-sub">El texto recuperado debe ser idéntico al original, byte por byte.</p>
+                </div>
+              </div>
+            </div>
+            <p class="locked-note" data-locked>Disponible cuando descomprimas un archivo en el paso 6.</p>
+            <div data-body hidden>
+              <div class="flowline" id="flow"></div>
+              <div class="mt-5 rounded-2xl px-4 py-3.5 text-[14.5px] font-medium flex items-center gap-3" id="verdict"></div>
+              <ul class="checks mt-4" id="checks"></ul>
+              <div class="mt-6 mini-label" id="restored-title">Texto recuperado</div>
+              <div class="mt-2 preview-box" id="restored-preview"></div>
+              <div class="mt-6"><button class="btn btn-cta" type="button" id="btn-download-txt"></button></div>
+            </div>
+          </section>
+
+          <!-- ========================================================
+               HISTORIAL
+               ======================================================== -->
+          <section id="historial" class="panel glass" aria-labelledby="t-historial">
+            <div class="panel-head">
+              <div>
+                <h2 id="t-historial">Tus compresiones recientes</h2>
+                <p class="panel-sub" id="hist-sub">Se guardan sólo en este navegador.</p>
+              </div>
+              <button class="btn btn-ghost btn-sm" type="button" id="hist-clear">Borrar historial</button>
+            </div>
+            <div id="hist-body"></div>
           </section>
         </div>
       </div>
@@ -287,6 +433,7 @@
   <script src="js/samples.js" defer></script>
   <script src="js/ui.js" defer></script>
   <script src="js/tree-view.js" defer></script>
+  <script src="js/gutenberg.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>
-</html> 
+</html>

@@ -1,10 +1,11 @@
 /* ==========================================================================
-   js/ui.js — Piezas compartidas por las dos páginas 
+   js/ui.js — Piezas compartidas por las tres páginas
    --------------------------------------------------------------------------
    · Íconos SVG (window.UI.icon)
    · Barra de navegación, menú móvil y pie de página (se insertan aquí para
-     no repetir el mismo HTML en index.html y app.html)
-   · Avisos (toasts), descargas, copiar al portapapeles
+     no repetir el mismo HTML en index.html, app.html y mst.html)
+   · Inicio de sesión opcional con Google + modo invitado
+   · Historial local, avisos (toasts), descargas, copiar al portapapeles
    · Control segmentado, foco de luz en tarjetas y aparición al hacer scroll
    ========================================================================== */
 (function () {
@@ -44,6 +45,8 @@
     package: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
     pen: '<path d="M12 20h9"/><path d="M16.38 3.62a1 1 0 0 1 3 3L7.37 18.64a2 2 0 0 1-.86.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.86z"/>',
     flask: '<path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/>',
+    logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+    history: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
     reset: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
     shuffle: '<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/>',
     external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
@@ -60,6 +63,8 @@
   function icon(name, size = 18, cls = '') {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="${cls}">${PATHS[name] || ''}</svg>`;
   }
+
+  const GOOGLE_G = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2A11.9 11.9 0 0 1 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3a12 12 0 0 1-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.7-.4-3.9z"/></svg>';
 
   const LOGO_MARK = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 4.2 4.3 10.4M8 4.2l3.7 6.2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="3.6" r="2.1" fill="#fff"/><circle cx="4" cy="11.6" r="2.1" fill="#fff" fill-opacity=".9"/><circle cx="12" cy="11.6" r="2.1" fill="#fff" fill-opacity=".55"/></svg>';
 
@@ -141,11 +146,161 @@
   }
 
   /* ------------------------------------------------------------------------
+     Sesión e historial (sólo en este navegador)
+     ------------------------------------------------------------------------ */
+  const auth = {
+    user() { return store.get('huffly:usuario'); },
+    signOut() {
+      store.del('huffly:usuario');
+      if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+      renderAuth();
+      toast('Sesión cerrada');
+    },
+  };
+  const history = {
+    key() {
+      const u = auth.user();
+      return 'huffly:historial:' + (u ? u.sub : 'invitado');
+    },
+    list() { return store.get(history.key(), []); },
+    add(item) {
+      const list = history.list();
+      list.unshift({ ...item, fecha: Date.now() });
+      store.set(history.key(), list.slice(0, 12));
+      document.dispatchEvent(new CustomEvent('huffly:historial'));
+    },
+    clear() {
+      store.del(history.key());
+      document.dispatchEvent(new CustomEvent('huffly:historial'));
+    },
+  };
+
+  function decodeJwt(token) {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(b64);
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+
+  let gisPromise = null;
+  function loadGoogle() {
+    if (window.google && google.accounts && google.accounts.id) return Promise.resolve();
+    if (!gisPromise) {
+      gisPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://accounts.google.com/gsi/client';
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('No se pudo cargar el servicio de Google.'));
+        document.head.appendChild(s);
+      });
+    }
+    return gisPromise;
+  }
+
+  function onGoogleCredential(resp) {
+    try {
+      const p = decodeJwt(resp.credential);
+      store.set('huffly:usuario', { sub: p.sub, name: p.name || p.email, email: p.email, picture: p.picture || '' });
+      $('#login-modal')?.close();
+      renderAuth();
+      toast(`Hola, ${(p.given_name || p.name || '').split(' ')[0]}. Tu historial se guardará en este navegador.`, 'ok');
+      document.dispatchEvent(new CustomEvent('huffly:historial'));
+    } catch (e) {
+      toast('Google respondió, pero no se pudo leer tu perfil. Intenta de nuevo.', 'err');
+    }
+  }
+
+  async function mountGoogleButton(slot, note) {
+    const fallback = `<button class="btn btn-glass w-full" type="button" data-google-off>${GOOGLE_G}Continuar con Google</button>`;
+    if (!CFG.googleClientId) {
+      slot.innerHTML = fallback;
+      note.textContent = 'El inicio con Google no está activado en este sitio. Puedes usar todas las funciones sin cuenta.';
+      console.info('[Huffly] Para activar Google, agrega googleClientId en js/config.js (ver README → "Inicio de sesión con Google").');
+      return;
+    }
+    slot.innerHTML = '<div class="skeleton h-11 w-full"></div>';
+    try {
+      await loadGoogle();
+      google.accounts.id.initialize({ client_id: CFG.googleClientId, callback: onGoogleCredential, ux_mode: 'popup' });
+      slot.innerHTML = '';
+      google.accounts.id.renderButton(slot, { theme: 'filled_black', size: 'large', shape: 'pill', text: 'continue_with', width: Math.min(slot.clientWidth || 340, 400), locale: 'es' });
+      note.textContent = 'Sólo usamos tu nombre y foto para mostrar tu sesión. No hay servidor que los guarde.';
+    } catch (e) {
+      slot.innerHTML = fallback;
+      note.textContent = 'No se pudo conectar con Google. Revisa tu conexión o continúa sin cuenta.';
+    }
+  }
+
+  function buildModal() {
+    if ($('#login-modal')) return;
+    const d = document.createElement('dialog');
+    d.className = 'modal';
+    d.id = 'login-modal';
+    d.setAttribute('aria-labelledby', 'login-title');
+    d.innerHTML = `
+      <div class="modal-card glass-solid edge-glow p-7 sm:p-8">
+        <button class="btn btn-ghost btn-icon absolute top-3 right-3" data-close aria-label="Cerrar">${icon('x', 18)}</button>
+        <span class="logo-mark" style="width:42px;height:42px;border-radius:13px">${LOGO_MARK}</span>
+        <h2 id="login-title" class="mt-5 text-[22px] font-semibold tracking-tight">Inicia sesión en ${esc(CFG.nombre || 'Huffly')}</h2>
+        <p class="mt-2 text-[15px] leading-relaxed">Tu cuenta sólo sirve para guardar el historial de compresiones en este navegador. Los archivos nunca salen de tu equipo.</p>
+        <div class="mt-6 min-h-11 flex justify-center" id="gis-slot"></div>
+        <div class="divider-text my-5">o</div>
+        <button class="btn btn-glass w-full" type="button" data-guest>Continuar sin cuenta</button>
+        <p class="mt-5 text-[12.5px] leading-relaxed muted" id="gis-note"></p>
+      </div>`;
+    document.body.appendChild(d);
+    d.addEventListener('click', (e) => {
+      if (e.target === d || e.target.closest('[data-close]')) d.close();
+      if (e.target.closest('[data-guest]')) {
+        d.close();
+        if (!/app\.html$/.test(location.pathname)) location.href = 'app.html#fuente';
+        else toast('Estás usando Huffly como invitado.');
+      }
+      if (e.target.closest('[data-google-off]')) toast('El inicio con Google no está activado en este sitio. Continúa sin cuenta.');
+    });
+  }
+
+  function openLogin() {
+    buildModal();
+    const d = $('#login-modal');
+    d.showModal();
+    mountGoogleButton($('#gis-slot', d), $('#gis-note', d));
+  }
+
+  function renderAuth() {
+    const slot = $('#auth-slot');
+    if (!slot) return;
+    const u = auth.user();
+    if (!u) {
+      slot.innerHTML = `<button class="btn btn-ghost btn-sm" type="button" data-login>Iniciar sesión</button>`;
+      return;
+    }
+    const initial = esc((u.name || '?').trim().charAt(0).toUpperCase());
+    const avatar = u.picture
+      ? `<img class="avatar" src="${esc(u.picture)}" alt="" referrerpolicy="no-referrer">`
+      : `<span class="avatar avatar-fallback">${initial}</span>`;
+    slot.innerHTML = `
+      <div class="relative">
+        <button class="flex items-center gap-2 rounded-full p-1 pr-3 hover:bg-white/5 transition" type="button" id="user-btn" aria-haspopup="menu" aria-expanded="false">
+          ${avatar}<span class="text-[14px] text-[var(--text-1)] max-w-32 truncate">${esc((u.name || '').split(' ')[0])}</span>
+        </button>
+        <div class="menu glass-solid" role="menu" id="user-menu">
+          <div class="px-3 py-2 text-[12.5px] muted truncate">${esc(u.email || '')}</div>
+          <a href="app.html#historial" role="menuitem">${icon('history', 16)}Mis compresiones</a>
+          <button type="button" role="menuitem" data-signout>${icon('logout', 16)}Cerrar sesión</button>
+        </div>
+      </div>`;
+  }
+
+  /* ------------------------------------------------------------------------
      Navegación y pie de página
      ------------------------------------------------------------------------ */
   const NAV = [
     { id: 'como', label: 'Cómo funciona', href: 'index.html#como-funciona' },
     { id: 'estudio', label: 'Estudio', href: 'app.html' },
+    { id: 'inspector', label: 'Inspector', href: 'app.html#inspector' },
+    { id: 'mst', label: 'Expansión mínima', href: 'mst.html' },
     { id: 'formato', label: 'Formato .hfz', href: 'index.html#formato' },
   ];
 
@@ -160,6 +315,7 @@
           <a href="index.html" class="logo" aria-label="${esc(CFG.nombre)}, inicio"><span class="logo-mark">${LOGO_MARK}</span>${esc(CFG.nombre)}</a>
           <div class="hidden lg:flex items-center gap-0.5 ml-6">${NAV.map((l) => link(l, 'nav-link')).join('')}</div>
           <div class="ml-auto flex items-center gap-2">
+            <div id="auth-slot" class="hidden sm:flex items-center"></div>
             <a href="app.html#fuente" class="btn btn-cta btn-sm hidden sm:inline-flex">Comprimir un libro</a>
             <button class="btn btn-ghost btn-icon lg:hidden burger flex-col" type="button" id="burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-mobile"><span></span><span></span></button>
           </div>
@@ -169,6 +325,7 @@
             <div class="shell pb-5 pt-1 flex flex-col">
               ${NAV.map((l) => link(l, 'nav-link block rounded-xl py-3 text-[15.5px]')).join('')}
               <div class="flex gap-2 pt-4 sm:hidden">
+                <button class="btn btn-glass btn-sm flex-1" type="button" data-login>Iniciar sesión</button>
                 <a href="app.html#fuente" class="btn btn-cta btn-sm flex-1">Comprimir un libro</a>
               </div>
             </div>
@@ -190,6 +347,7 @@
       nav.classList.remove('is-open');
       burger.setAttribute('aria-expanded', 'false');
     }));
+    renderAuth();
   }
 
   /* En la portada, el enlace activo sigue a la sección visible */
@@ -222,6 +380,8 @@
             <h4 class="text-[13.5px] font-semibold mb-4">Producto</h4>
             <ul class="space-y-2.5 text-[14px]">
               <li><a href="app.html">Estudio</a></li>
+              <li><a href="app.html#inspector">Inspector</a></li>
+              <li><a href="mst.html">Expansión mínima</a></li>
               <li><a href="index.html#formato">Formato .hfz</a></li>
             </ul>
           </div>
@@ -231,6 +391,7 @@
               <li><a href="${esc(CFG.repositorio)}" target="_blank" rel="noopener">Repositorio en GitHub</a></li>
               ${CFG.tablero ? `<li><a href="${esc(CFG.tablero)}" target="_blank" rel="noopener">Tablero del proyecto</a></li>` : ''}
               <li><a href="https://www.gutenberg.org/" target="_blank" rel="noopener">Project Gutenberg</a></li>
+              <li><a href="https://gutendex.com/" target="_blank" rel="noopener">API Gutendex</a></li>
             </ul>
           </div>
           <div>
@@ -240,7 +401,7 @@
         </div>
         <div class="shell pb-10 flex flex-col sm:flex-row gap-3 justify-between text-[12.5px] text-[var(--text-4)]">
           <span>Proyecto académico sin fines de lucro. Huffman implementado por el equipo, sin librerías de compresión.</span>
-          <span>Libros gratis para probar en Project Gutenberg.</span>
+          <span>Los libros provienen de Project Gutenberg.</span>
         </div>
       </footer>`;
   }
@@ -342,7 +503,27 @@
     scrollSpy();
     effects();
     ready();
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-login]')) {
+        e.preventDefault();
+        openLogin();
+      }
+      if (e.target.closest('[data-signout]')) auth.signOut();
+      const userBtn = e.target.closest('#user-btn');
+      const menu = $('#user-menu');
+      if (menu) {
+        if (userBtn) {
+          const open = menu.classList.toggle('is-open');
+          userBtn.setAttribute('aria-expanded', String(open));
+        } else if (!e.target.closest('#user-menu')) {
+          menu.classList.remove('is-open');
+        }
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') $('#user-menu')?.classList.remove('is-open');
+    });
   });
 
-  window.UI = { icon, LOGO_MARK, $, $$, esc, fmtInt, fmtNum, store, toast, download, copy, segmented, paintRange };
+  window.UI = { icon, GOOGLE_G, LOGO_MARK, $, $$, esc, fmtInt, fmtNum, store, toast, download, copy, auth, history, openLogin, segmented, paintRange };
 })();

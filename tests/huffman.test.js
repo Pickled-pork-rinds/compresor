@@ -1,13 +1,14 @@
 /* ==========================================================================
-   tests/huffman.test.js — Pruebas del núcleo de Huffman 
-   Ejecutar desde la raíz del proyecto:   node tests/huffman.test.js 
+   tests/huffman.test.js — Pruebas del núcleo (Huffman + expansión mínima)
+   Ejecutar desde la raíz del proyecto:   node tests/huffman.test.js
    Regenerar archivos de prueba cruzada:  node tests/huffman.test.js --fixtures
    ========================================================================== */
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const H = require('../js/huffman.js');
- 
+const M = require('../js/mst.js');
+
 const enc = new TextEncoder();
 const FECHA = 1767225600; // 2026-01-01 00:00:00 UTC (fija para comparar con Python)
 let total = 0;
@@ -154,6 +155,26 @@ prueba('Huffman nunca usa más bits que un código de longitud fija', () => {
   assert.ok(a.totalBits <= a.total * Math.ceil(Math.log2(a.entries.length)));
   assert.ok(a.totalBits / a.total >= a.entropy - 1e-9, 'no puede bajar de la entropía');
   assert.ok(a.totalBits / a.total < a.entropy + 1, 'debe quedar a menos de 1 bit de la entropía');
+});
+
+console.log('\nÁrbol de expansión mínima');
+
+prueba('Kruskal y Prim encuentran el mismo peso total (300 grafos)', () => {
+  for (let s = 1; s <= 300; s++) {
+    const g = M.makeGraph(5 + (s % 14), s, 640, 400);
+    const k = M.kruskal(g);
+    const p = M.prim(g, s % g.nodes.length);
+    assert.strictEqual(k.total, p.total, 'semilla ' + s);
+    assert.strictEqual(k.mstEdges.length, g.nodes.length - 1);
+    assert.strictEqual(p.mstEdges.length, g.nodes.length - 1);
+  }
+});
+
+prueba('grafo clásico de 5 vértices: peso mínimo 16', () => {
+  const edges = [[0, 1, 2], [0, 3, 6], [1, 2, 3], [1, 3, 8], [1, 4, 5], [2, 4, 7], [3, 4, 9]];
+  const g = { nodes: [{}, {}, {}, {}, {}], edges: edges.map(([a, b, w], id) => ({ id, a, b, w })) };
+  assert.strictEqual(M.kruskal(g).total, 16);
+  assert.strictEqual(M.prim(g).total, 16);
 });
 
 console.log(`\n${total} pruebas correctas\n`);

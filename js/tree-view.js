@@ -1,11 +1,11 @@
 /* ==========================================================================
    js/tree-view.js — Dibujo del árbol de Huffman en SVG
    --------------------------------------------------------------------------
-   TreeView: árbol interactivo del estudio
+   TreeView: árbol interactivo del estudio y del inspector
      · arrastrar para mover, rueda o pellizco para acercar
      · setStep(k) muestra el bosque después de k uniones voraces
      · highlight(símbolo) ilumina el camino raíz → hoja (su código)
-   miniTree: versión compacta y fija para la portada 
+   miniTree: versión compacta y fija para la portada
    ========================================================================== */
 (function (root) {
   'use strict';

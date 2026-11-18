@@ -1,7 +1,7 @@
 """
 test_huffman.py — Pruebas de la versión en Python.
 
-Ejecutar desde la carpeta python/: 
+Ejecutar desde la carpeta python/:
     python -m unittest -v test_huffman
 
 Incluye la prueba cruzada: los archivos de tests/fixtures/*.hfz fueron
@@ -11,8 +11,9 @@ generar exactamente los mismos bytes.
 import os
 import random
 import unittest
- 
+
 import huffman as H
+import mst as M
 
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "fixtures")
 FECHA = 1767225600  # misma fecha fija que usa tests/huffman.test.js
@@ -100,6 +101,21 @@ class PruebaCruzada(unittest.TestCase):
             self.assertEqual(cab["codificador"], 1)
             hfz_py, _ = H.comprimir(original, nombre, codificador=1, fecha=FECHA)
             self.assertEqual(hfz_py, hfz_js, f"{nombre}: Python y JavaScript generaron bytes distintos")
+
+
+class PruebasExpansionMinima(unittest.TestCase):
+    def test_kruskal_igual_a_prim(self):
+        for s in range(1, 200):
+            g = M.crear_grafo(5 + s % 14, s)
+            k, p = M.kruskal(g), M.prim(g, s % len(g["nodos"]))
+            self.assertEqual(k["total"], p["total"], f"semilla {s}")
+            self.assertEqual(len(k["aristas_mst"]), len(g["nodos"]) - 1)
+
+    def test_grafo_clasico(self):
+        aristas = [(0, 1, 2), (0, 3, 6), (1, 2, 3), (1, 3, 8), (1, 4, 5), (2, 4, 7), (3, 4, 9)]
+        g = {"nodos": [(0, 0)] * 5, "aristas": [(i, a, b, w) for i, (a, b, w) in enumerate(aristas)]}
+        self.assertEqual(M.kruskal(g)["total"], 16)
+        self.assertEqual(M.prim(g)["total"], 16)
 
 
 if __name__ == "__main__":

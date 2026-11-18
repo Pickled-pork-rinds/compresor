@@ -1,5 +1,5 @@
 /* ==========================================================================
-   js/landing.js — Interactividad de la portada (index.html) 
+   js/landing.js — Interactividad de la portada (index.html)
    --------------------------------------------------------------------------
    Todo lo que se ve aquí se calcula en vivo con js/huffman.js: los bits del
    titular, el mockup, el ejemplo del pizarrón y el mapa de bytes son reales.
@@ -246,9 +246,10 @@
   }
 
   /* ------------------------------------------------------------------------
-     5) Mapa de bytes del archivo .hfz (sección de formato)
+     5) Mapa de bytes del archivo .hfz (bento y sección de formato)
      ------------------------------------------------------------------------ */
   const CATEGORY = { magic: 'id', version: 'id', flags: 'id', encoder: 'id', created: 'meta', size: 'meta', crc: 'meta', bits: 'bits', padding: 'bits', namelen: 'name', name: 'name', count: 'table', widths: 'table', table: 'table', data: 'data' };
+  const CATEGORY_NAME = { id: 'Identificación', meta: 'Metadatos', bits: 'Bits válidos', name: 'Nombre', table: 'Tabla de frecuencias', data: 'Datos comprimidos' };
 
   function hexCells(file, header) {
     const owner = new Array(file.length);
@@ -296,6 +297,90 @@
     const repo = (CFG.repositorio || '').replace(/\/$/, '');
     $('#spec-link').href = repo ? `${repo}/blob/main/docs/formato-hfz.md` : 'docs/formato-hfz.md';
 
+    // Versión compacta para la tarjeta del inspector
+    $('#bento-hex').innerHTML = hexCells(file, h);
+    window.miniTree($('#bento-tree'), h.tree, h.mode, { w: 200, h: 96, r: 9 })(Infinity);
+    $('#bento-head').textContent = `${h.headerLen} B`;
+    $('#bento-head-sub').textContent = `${h.segments.length - 1} campos y ${h.dataLen} B de datos`;
+    $('#bento-bits').innerHTML = H.bitPreview(file, h, 64).map((g) => g.split('').map((b) => `<span class="b${b}">${b}</span>`).join('')).join(' ');
+    $('#bento-legend').innerHTML = Object.entries(CATEGORY_NAME).map(([k, v]) => `<span class="inline-flex items-center gap-2"><span class="seg-swatch seg-${k}"></span>${v}</span>`).join('');
+  }
+
+  /* ------------------------------------------------------------------------
+     6) Métricas e integridad reales con el fragmento del Quijote
+     ------------------------------------------------------------------------ */
+  function bentoNumbers() {
+    const sample = (window.HUFFLY_SAMPLES || []).find((s) => s.id === 'quijote');
+    if (!sample) return;
+    const bytes = enc.encode(sample.texto);
+    const r = H.compress(bytes, { name: sample.archivo });
+    const d = H.decompress(r.file);
+    let diff = 0;
+    for (let i = 0; i < bytes.length; i++) if (bytes[i] !== d.bytes[i]) diff++;
+    const saved = bytes.length - r.file.length;
+    $('#bento-metrics-cap').textContent = `Medido ahora con el fragmento del Quijote incluido en la app.`;
+    const cell = (k, v, s) => `<div class="rounded-xl px-3 py-2.5 bg-white/[0.035] border border-[var(--line)]"><dt class="text-[12px] text-[var(--text-3)]">${k}</dt><dd class="text-[16px] font-semibold text-[var(--text-1)] tabular-nums tracking-tight">${v}</dd><dd class="text-[11.5px] text-[var(--text-4)] tabular-nums">${s}</dd></div>`;
+    $('#bento-metrics').innerHTML =
+      cell('Original', H.formatBytes(bytes.length), `${fmtInt(bytes.length)} B`) +
+      cell('Comprimido', H.formatBytes(r.file.length), `${fmtInt(r.file.length)} B`) +
+      cell('Ahorro', H.formatBytes(saved), `${fmtInt(saved)} B`) +
+      cell('Reducción', pct(saved / bytes.length), `${r.analysis.entries.length} símbolos`);
+    const ok = (t, v) => `<li class="flex items-center gap-2.5"><span class="check-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="flex-1 text-[var(--text-2)]">${t}</span><span class="mono text-[11.5px] text-[var(--text-4)]">${v}</span></li>`;
+    $('#bento-integrity').innerHTML =
+      ok('Mismo tamaño', `${fmtInt(d.bytes.length)} B`) +
+      ok('CRC-32 coincide', `0x${d.crc.toString(16).toUpperCase().padStart(8, '0')}`) +
+      ok('Byte a byte', `${diff} diferencias`);
+  }
+
+  /* ------------------------------------------------------------------------
+     7) Avance del laboratorio: Kruskal sobre un grafo pequeño
+     ------------------------------------------------------------------------ */
+  function mstTeaser() {
+    const M = window.MST;
+    const svg = $('#mst-teaser');
+    const graph = M.makeGraph(8, 90, 560, 340);
+    const total = graph.edges.reduce((s, e) => s + e.w, 0);
+    const letter = (i) => String.fromCharCode(65 + i);
+    svg.innerHTML =
+      graph.edges.map((e) => {
+        const a = graph.nodes[e.a];
+        const b = graph.nodes[e.b];
+        const mx = (a.x + b.x) / 2;
+        const my = (a.y + b.y) / 2;
+        return `<g class="g-edge" data-e="${e.id}"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><rect class="w-bg" x="${mx - 13}" y="${my - 9}" width="26" height="18" rx="6"/><text x="${mx}" y="${my}">${e.w}</text></g>`;
+      }).join('') +
+      graph.nodes.map((n, i) => `<g class="g-node"><circle cx="${n.x}" cy="${n.y}" r="15"/><text x="${n.x}" y="${n.y}">${letter(i)}</text></g>`).join('');
+    // Miniatura para la tarjeta del bento: el árbol mínimo ya resuelto
+    const mini = M.makeGraph(7, 114, 300, 120);
+    const inTree = new Set(M.kruskal(mini).mstEdges);
+    $('#bento-mst').innerHTML =
+      mini.edges.map((e) => `<g class="g-edge ${inTree.has(e.id) ? 'is-in' : ''}"><line x1="${mini.nodes[e.a].x}" y1="${mini.nodes[e.a].y}" x2="${mini.nodes[e.b].x}" y2="${mini.nodes[e.b].y}"/></g>`).join('') +
+      mini.nodes.map((n) => `<g class="g-node is-tree"><circle cx="${n.x}" cy="${n.y}" r="7"/></g>`).join('');
+    const cap = $('#mst-cap');
+    cap.textContent = `Peso de todas las aristas: ${total}`;
+    const btn = $('#mst-play');
+    let timers = [];
+    btn.addEventListener('click', () => {
+      timers.forEach(clearTimeout);
+      timers = [];
+      $$('.g-edge', svg).forEach((el) => el.classList.remove('is-current', 'is-in', 'is-out'));
+      const k = M.kruskal(graph);
+      const dt = reduce ? 0 : 520;
+      k.steps.forEach((st, i) => {
+        timers.push(setTimeout(() => {
+          const el = svg.querySelector(`[data-e="${st.edge}"]`);
+          $$('.is-current', svg).forEach((x) => x.classList.remove('is-current'));
+          el.classList.add('is-current');
+          cap.textContent = st.accepted ? `Se acepta la arista de peso ${graph.edges[st.edge].w}. Total: ${st.total}` : `Se descarta la de peso ${graph.edges[st.edge].w}: formaría un ciclo`;
+          timers.push(setTimeout(() => {
+            el.classList.remove('is-current');
+            el.classList.add(st.accepted ? 'is-in' : 'is-out');
+            if (i === k.steps.length - 1) cap.textContent = `Árbol mínimo: ${graph.nodes.length - 1} aristas, peso ${k.total} de ${total}`;
+          }, dt * 0.6));
+        }, i * dt));
+      });
+      btn.querySelector('span').textContent = 'Repetir';
+    });
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -304,6 +389,7 @@
     marquee();
     const file = howItWorks();
     formatSection(file.file);
+    bentoNumbers();
+    mstTeaser();
   });
-})(); 
-  
+})();

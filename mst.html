@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Árbol de expansión mínima · Huffly</title>
+  <meta name="description" content="Kruskal y Prim paso a paso: el árbol de expansión mínima con la técnica voraz.">
+  <meta name="theme-color" content="#0b0930">
+  <meta property="og:title" content="Árbol de expansión mínima · Huffly">
+  <meta property="og:image" content="assets/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+
+  <script>document.documentElement.classList.add('js')</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.2/dist/index.global.js"></script>
+  <style type="text/tailwindcss">
+    @theme static {
+      --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+  </style>
+  <noscript><style>html.js body { opacity: 1 }</style></noscript>
+</head>
+<body>
+  <div class="bg-aurora" aria-hidden="true"></div>
+  <div class="bg-grain" aria-hidden="true"></div>
+  <a href="#lab" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[90] btn btn-glass btn-sm">Saltar al laboratorio</a>
+
+  <div id="nav-root" data-active="mst"></div>
+
+  <main class="pt-24 sm:pt-28">
+    <div class="shell">
+      <header class="max-w-3xl">
+        <h1 class="title">Árbol de expansión mínima</h1>
+        <p class="lead mt-3">
+          Conecta todos los vértices de un grafo con el menor peso total posible. Kruskal y Prim son voraces, como Huffman:
+          en cada paso toman la opción más barata del momento y nunca la deshacen.
+        </p>
+      </header>
+
+      <div class="mt-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_330px] gap-6" id="lab">
+        <div class="space-y-4 min-w-0">
+          <div class="panel glass p-4 sm:p-5">
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="segmented" role="tablist" aria-label="Algoritmo" id="algo-tabs">
+                <button type="button" role="tab" data-value="kruskal" aria-selected="true">Kruskal</button>
+                <button type="button" role="tab" data-value="prim" aria-selected="false">Prim</button>
+              </div>
+              <label class="flex items-center gap-2.5 text-[13.5px] text-[var(--text-3)]">Vértices
+                <input type="range" class="range w-28" id="g-n" min="5" max="16" value="9" aria-label="Número de vértices">
+                <span class="mono text-[var(--text-1)] w-5" id="g-n-val">9</span>
+              </label>
+              <label class="flex items-center gap-2.5 text-[13.5px] text-[var(--text-3)]" id="start-wrap" hidden>Inicio
+                <select class="field h-9 w-auto pr-9 text-[13.5px]" id="g-start" aria-label="Vértice inicial de Prim"></select>
+              </label>
+              <button class="btn btn-glass btn-sm ml-auto" type="button" id="g-new"></button>
+            </div>
+
+            <div class="graph-stage mt-4">
+              <svg id="g" viewBox="0 0 720 430" role="img" aria-label="Grafo no dirigido con pesos"></svg>
+            </div>
+
+            <p class="narration mt-4" id="g-narr" aria-live="polite"></p>
+
+            <div class="transport mt-4">
+              <button class="t-btn" type="button" id="m-first" aria-label="Volver al inicio"></button>
+              <button class="t-btn" type="button" id="m-prev" aria-label="Paso anterior"></button>
+              <button class="t-btn is-primary" type="button" id="m-play" aria-label="Reproducir"></button>
+              <button class="t-btn" type="button" id="m-next" aria-label="Paso siguiente"></button>
+              <button class="t-btn" type="button" id="m-last" aria-label="Ir al final"></button>
+              <input type="range" class="scrub" id="m-scrub" min="0" max="0" value="0" aria-label="Paso del algoritmo">
+              <span class="text-[13px] text-[var(--text-3)] tabular-nums min-w-14 text-right" id="m-count">0 / 0</span>
+              <label class="flex items-center gap-2 text-[13px] text-[var(--text-3)] w-full sm:w-auto">Velocidad <input type="range" class="range w-28" id="m-speed" min="1" max="10" value="5"></label>
+            </div>
+            <p class="mt-3 text-[12.5px] text-[var(--text-4)]">Arrastra los vértices para acomodarlos; los pesos no cambian.</p>
+          </div>
+
+          <div class="grid sm:grid-cols-3 gap-3" id="g-stats"></div>
+        </div>
+
+        <aside class="space-y-4 min-w-0">
+          <div class="glass p-5 rounded-[20px]">
+            <div class="flex justify-between gap-2 mini-label"><span id="list-title">Aristas ordenadas por peso</span><span id="list-count"></span></div>
+            <ul class="edge-list mt-3 max-h-[440px] overflow-auto pr-1" id="edge-list"></ul>
+          </div>
+          <div class="glass p-5 rounded-[20px]">
+            <div class="mini-label" id="code-title">Pseudocódigo</div>
+            <ol class="mt-3 space-y-1 mono text-[12.5px]" id="pseudo"></ol>
+            <p class="mt-4 text-[13px] text-[var(--text-3)] leading-relaxed" id="complexity"></p>
+          </div>
+        </aside>
+      </div>
+
+      <section class="mt-14 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <article class="bento glass">
+          <h3>Por qué la elección voraz es correcta</h3>
+          <p class="mt-2">
+            Propiedad del corte: si divides los vértices en dos grupos, la arista más barata que cruza entre ellos
+            pertenece a algún árbol de expansión mínima. Kruskal y Prim sólo toman aristas así, por eso nunca necesitan
+            arrepentirse de una decisión.
+          </p>
+        </article>
+        <article class="bento glass">
+          <h3>Qué tiene que ver con Huffman</h3>
+          <p class="mt-2">
+            Los tres algoritmos usan una cola ordenada por costo y toman siempre el mínimo: Huffman une los dos símbolos
+            menos frecuentes, Kruskal la arista más ligera y Prim la arista más ligera de la frontera.
+            La misma lógica está en <span class="mono text-[var(--text-2)]">python/mst.py</span> para la versión de escritorio.
+          </p>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <div id="footer-root"></div>
+
+  <script src="js/config.js" defer></script>
+  <script src="js/mst.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/mst-view.js" defer></script>
+</body>
+</html>

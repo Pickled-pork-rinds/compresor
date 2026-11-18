@@ -4,11 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Huffly: compresión de texto con Huffman</title>
-  <meta name="description" content="Comprime textos con el algoritmo de Huffman y mira el árbol crecer paso a paso.">
+  <meta name="description" content="Comprime libros de Project Gutenberg con el algoritmo de Huffman, mira el árbol crecer paso a paso e inspecciona cada byte del archivo comprimido.">
   <meta name="theme-color" content="#0b0930">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Huffly: comprime libros y entiende cada bit">
-  <meta property="og:description" content="Algoritmo de Huffman con técnica voraz: frecuencias, árbol, códigos y formato propio .hfz.">
+  <meta property="og:description" content="Algoritmo de Huffman con técnica voraz: frecuencias, árbol, códigos, formato propio .hfz, inspector y verificación de integridad.">
+  <!-- Al publicar, cambia esta ruta por la URL completa, por ejemplo https://tu-proyecto.vercel.app/assets/og.jpg -->
+  <meta property="og:image" content="assets/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 
   <script>document.documentElement.classList.add('js')</script>
@@ -21,7 +24,7 @@
     @theme static {
       --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
       --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    }  
+    }
   </style>
   <noscript><style>html.js body { opacity: 1 }</style></noscript>
 </head>
@@ -54,12 +57,15 @@
 
           <p class="lead mt-5 max-w-[34rem]">
             Huffly cuenta las letras de cualquier texto, construye su árbol de Huffman con la técnica voraz y lo guarda
-            en un archivo propio .hfz, listo para descargar.
+            en un archivo propio que puedes inspeccionar, descomprimir y verificar byte a byte.
           </p>
 
           <div class="mt-9 flex flex-col sm:flex-row gap-3">
             <a href="app.html#fuente" class="btn btn-cta btn-lg">Comprimir un libro</a>
-            <a href="#como-funciona" class="btn btn-glass btn-lg">Ver cómo funciona</a>
+            <button type="button" class="btn btn-glass btn-lg" data-login>
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2A11.9 11.9 0 0 1 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3a12 12 0 0 1-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.7-.4-3.9z"/></svg>
+              Continuar con Google
+            </button>
           </div>
 
           <ul class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-[14px] text-[var(--text-2)]">
@@ -170,7 +176,92 @@
     </section>
 
     <!-- ================================================================
-         FORMATO .hfz 
+         FUNCIONES (bento)
+         ================================================================ -->
+    <section id="producto" class="py-20 sm:py-28">
+      <div class="shell">
+        <div class="max-w-2xl reveal">
+          <h2 class="title">Un compresor completo, no sólo una demostración</h2>
+          <p class="lead mt-4">Buscar el texto, medir el ahorro, guardar el archivo, abrirlo sin el original y comprobar que nada se perdió.</p>
+        </div>
+
+        <div class="mt-12 grid grid-cols-1 gap-4 md:grid-cols-6">
+          <article class="bento bento-lg glass spot lift md:col-span-4 md:row-span-2 flex flex-col">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <span class="icon-tile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M4.27 21a2 2 0 0 0 1.73 1H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v3"/><path d="m9 18-1.5-1.5"/><circle cx="5" cy="14" r="3"/></svg></span>
+                <h3 class="mt-5">Inspector de archivos .hfz</h3>
+                <p class="mt-2 max-w-md">Abre un archivo comprimido sin tener el .txt: ve su encabezado, su tabla de frecuencias, el árbol reconstruido y los primeros bits antes de descomprimir.</p>
+              </div>
+              <a href="app.html#inspector" class="btn btn-glass btn-sm hidden sm:inline-flex shrink-0">Abrir inspector</a>
+            </div>
+            <div class="mt-7 hexmap" id="bento-hex" style="--cols:17"></div>
+            <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[12.5px] text-[var(--text-3)]" id="bento-legend"></div>
+            <div class="mt-auto pt-7 grid sm:grid-cols-3 gap-3">
+              <div class="mini-card p-4">
+                <div class="mini-label">Encabezado</div>
+                <div class="mt-1.5 text-[22px] font-semibold text-[var(--text-1)] tracking-tight" id="bento-head">48 B</div>
+                <div class="text-[12.5px] text-[var(--text-3)]" id="bento-head-sub">15 campos documentados</div>
+              </div>
+              <div class="mini-card p-2">
+                <div class="mini-label px-2 pt-2">Árbol reconstruido</div>
+                <svg id="bento-tree" class="mini-tree w-full h-auto" role="img" aria-label="Árbol reconstruido desde el archivo"></svg>
+              </div>
+              <div class="mini-card p-4">
+                <div class="mini-label">Primeros bits</div>
+                <div class="mt-2 code text-[13px] leading-relaxed break-all" id="bento-bits"></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="bento glass spot lift md:col-span-2">
+            <span class="icon-tile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+            <h3 class="mt-5">Busca en Project Gutenberg</h3>
+            <p class="mt-2">Por título, autor o palabra clave, y el libro se descarga directo al compresor.</p>
+            <div class="mt-5 space-y-1.5 text-[13px]">
+              <div class="flex justify-between gap-3 rounded-lg px-3 py-2 bg-white/[0.04]"><span class="truncate text-[var(--text-1)]">Don Quijote</span><span class="mono text-[var(--text-4)]">#2000</span></div>
+              <div class="flex justify-between gap-3 rounded-lg px-3 py-2 bg-white/[0.025]"><span class="truncate">Frankenstein</span><span class="mono text-[var(--text-4)]">#84</span></div>
+              <div class="flex justify-between gap-3 rounded-lg px-3 py-2 bg-white/[0.015]"><span class="truncate">Pride and Prejudice</span><span class="mono text-[var(--text-4)]">#1342</span></div>
+            </div>
+          </article>
+
+          <article class="bento glass spot lift md:col-span-2">
+            <span class="icon-tile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <h3 class="mt-5">Integridad comprobada</h3>
+            <p class="mt-2">Tres pruebas independientes tras descomprimir.</p>
+            <ul class="mt-5 space-y-2 text-[13.5px]" id="bento-integrity"></ul>
+          </article>
+
+          <article class="bento glass spot lift md:col-span-2">
+            <span class="icon-tile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
+            <h3 class="mt-5">Métricas exactas</h3>
+            <p class="mt-2" id="bento-metrics-cap">Bytes, KB, ahorro y porcentaje.</p>
+            <dl class="mt-5 grid grid-cols-2 gap-2 text-[13px]" id="bento-metrics"></dl>
+          </article>
+
+          <article class="bento glass spot lift md:col-span-2">
+            <span class="icon-tile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg></span>
+            <h3 class="mt-5">También en Python</h3>
+            <p class="mt-2">Una app de escritorio con el mismo formato: lo que comprimes aquí se abre allá.</p>
+            <div class="mt-5 rounded-xl px-4 py-3 bg-black/30 border border-[var(--line)] mono text-[12.5px] leading-relaxed">
+              <span class="text-[var(--text-4)]">$</span> <span class="text-[var(--text-1)]">python python/app_gui.py</span><br>
+              <span class="text-[var(--mint)]">Huffly Desktop listo</span>
+            </div>
+          </article>
+
+          <article class="bento glass spot lift md:col-span-2">
+            <span class="icon-tile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="5" r="2.5"/><circle cx="12" cy="19" r="2.5"/><circle cx="18" cy="15" r="2"/><path d="M7.4 6.6 16.6 5.3"/><path d="m6.2 8.2 4.6 8.6"/><path d="m14.4 18.2 2-1.8"/></svg></span>
+            <h3 class="mt-5">Árbol de expansión mínima</h3>
+            <p class="mt-2">Kruskal y Prim animados, con el mismo enfoque voraz.</p>
+            <svg id="bento-mst" class="mt-4 w-full h-auto" viewBox="0 0 300 120" aria-hidden="true"></svg>
+            <a href="mst.html" class="mt-4 inline-flex items-center gap-1.5 text-[14px] font-medium text-[var(--violet-soft)] hover:text-white transition">Abrir el laboratorio<svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         FORMATO .hfz
          ================================================================ -->
     <section id="formato" class="py-20 sm:py-28">
       <div class="shell grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] gap-10 lg:gap-14 items-start">
@@ -200,16 +291,81 @@
     </section>
 
     <!-- ================================================================
+         EXPANSIÓN MÍNIMA (avance del laboratorio)
+         ================================================================ -->
+    <section class="py-20 sm:py-28">
+      <div class="shell grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+        <div class="glass edge-glow p-3 sm:p-4 rounded-[24px] order-2 lg:order-1">
+          <div class="graph-stage"><svg id="mst-teaser" viewBox="0 0 560 340" role="img" aria-label="Grafo con pesos para el algoritmo de Kruskal"></svg></div>
+          <div class="mt-3 flex flex-wrap items-center gap-3 px-1 pb-1">
+            <button class="btn btn-glass btn-sm" type="button" id="mst-play">
+              <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z" fill="currentColor"/></svg>
+              <span>Ver Kruskal paso a paso</span>
+            </button>
+            <span class="text-[13.5px] text-[var(--text-3)]" id="mst-cap">Peso de todas las aristas: —</span>
+          </div>
+        </div>
+        <div class="order-1 lg:order-2 reveal">
+          <h2 class="title">La misma idea voraz, aplicada a grafos</h2>
+          <p class="lead mt-4">
+            El árbol de expansión mínima conecta todos los vértices con el menor peso posible.
+            Kruskal toma siempre la arista más barata que no forme un ciclo; Prim hace crecer un solo árbol desde un vértice.
+            Ambos llegan al mismo peso total.
+          </p>
+          <a href="mst.html" class="btn btn-cta mt-8">Abrir el laboratorio</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         PREGUNTAS FRECUENTES
+         ================================================================ -->
+    <section id="preguntas" class="py-20 sm:py-28">
+      <div class="shell grid grid-cols-1 lg:grid-cols-[0.75fr_1.25fr] gap-10 lg:gap-14">
+        <div class="reveal">
+          <h2 class="title">Preguntas frecuentes</h2>
+          <p class="lead mt-4">Lo que suele preguntar quien prueba Huffly por primera vez.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>¿Mis archivos se suben a algún servidor?<span class="plus" aria-hidden="true"></span></summary>
+            <p class="answer">No. La compresión, el inspector y la descompresión corren en tu navegador. Sólo la descarga de un libro de Project Gutenberg pasa por un pequeño servidor intermedio, porque Gutenberg no permite descargas directas desde otras páginas.</p>
+          </details>
+          <details>
+            <summary>¿Por qué un texto muy corto puede crecer al comprimirlo?<span class="plus" aria-hidden="true"></span></summary>
+            <p class="answer">El archivo guarda un encabezado con la tabla de frecuencias para poder reconstruir el árbol. En un texto de pocas letras ese encabezado pesa más que los bits que se ahorran. En un libro completo pesa menos del 0.5 % del archivo.</p>
+          </details>
+          <details>
+            <summary>¿Qué diferencia hay entre el modo carácter y el modo byte?<span class="plus" aria-hidden="true"></span></summary>
+            <p class="answer">En modo carácter cada letra Unicode es un símbolo, así que la «á» o la «ñ» cuentan como una sola. En modo byte se cuentan los bytes del archivo, y la «ñ» en UTF-8 ocupa dos. Huffly elige el modo carácter si el texto es UTF-8 válido con acentos, y el modo byte en cualquier otro caso.</p>
+          </details>
+          <details>
+            <summary>¿Cómo sé que el archivo recuperado es idéntico?<span class="plus" aria-hidden="true"></span></summary>
+            <p class="answer">Después de descomprimir se comparan tres cosas: el tamaño en bytes, la huella CRC-32 guardada en el encabezado y, si el original sigue abierto, una comparación byte a byte y una huella SHA-256 de ambos.</p>
+          </details>
+          <details>
+            <summary>¿Puedo abrir en Python un archivo comprimido aquí?<span class="plus" aria-hidden="true"></span></summary>
+            <p class="answer">Sí. La versión web y la de escritorio generan exactamente los mismos bytes para el mismo texto, y cada una abre los archivos de la otra. Las pruebas automáticas del proyecto lo verifican.</p>
+          </details>
+          <details>
+            <summary>¿Necesito una cuenta?<span class="plus" aria-hidden="true"></span></summary>
+            <p class="answer">No. Todas las funciones están disponibles sin cuenta. Si inicias sesión con Google, tu historial de compresiones se guarda en este navegador con tu nombre.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
          LLAMADA FINAL
          ================================================================ -->
     <section class="pt-6">
       <div class="shell">
         <div class="cta-band glass edge-glow relative px-6 py-14 sm:px-14 sm:py-20 text-center">
           <h2 class="title max-w-2xl mx-auto relative z-[1]">Tu primer archivo .hfz en menos de un minuto</h2>
-          <p class="lead mt-4 max-w-xl mx-auto relative z-[1]">Sube un texto, comprímelo y descárgalo. Sin registro y sin instalar nada.</p>
+          <p class="lead mt-4 max-w-xl mx-auto relative z-[1]">Busca un libro, comprímelo y descárgalo. Sin registro y sin instalar nada.</p>
           <div class="mt-9 flex flex-col sm:flex-row justify-center gap-3 relative z-[1]">
             <a class="btn btn-cta btn-lg" href="app.html#fuente">Comprimir un libro</a>
-            <a class="btn btn-glass btn-lg" href="#formato">Conocer el formato .hfz</a>
+            <a class="btn btn-glass btn-lg" href="app.html#inspector">Abrir un archivo .hfz</a>
           </div>
         </div>
       </div>
@@ -220,6 +376,7 @@
 
   <script src="js/config.js" defer></script>
   <script src="js/huffman.js" defer></script>
+  <script src="js/mst.js" defer></script>
   <script src="js/samples.js" defer></script>
   <script src="js/ui.js" defer></script>
   <script src="js/tree-view.js" defer></script>

@@ -6,7 +6,7 @@
    fondo animado, vidrio esmerilado, botones, el mockup, el árbol, tablas...
 
    El orden de capas permite que una clase de Tailwind (utilities) siempre
-   pueda sobrescribir un componente de aquí (components). 
+   pueda sobrescribir un componente de aquí (components).
    ========================================================================== */
 @layer theme, base, components, utilities;
 
@@ -651,8 +651,12 @@
   @keyframes stage-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
   /* ------------------------------------------------------------------------
-     13. Mosaico de ícono
+     13. Bento de funciones
      ------------------------------------------------------------------------ */
+  .bento { border-radius: var(--r-lg); padding: 24px; }
+  .bento-lg { border-radius: var(--r-xl); }
+  .bento h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .bento p { font-size: 14.5px; color: var(--text-3); line-height: 1.6; }
   .icon-tile {
     width: 38px;
     height: 38px;
@@ -665,7 +669,7 @@
   }
 
   /* ------------------------------------------------------------------------
-     14. Mapa de bytes del archivo .hfz (portada)
+     14. Mapa de bytes del archivo .hfz (landing + inspector)
      ------------------------------------------------------------------------ */
   .hexmap { display: grid; grid-template-columns: repeat(var(--cols, 16), minmax(0, 1fr)); gap: 4px; }
   .hexcell {
@@ -704,8 +708,82 @@
   .field-row:hover, .field-row.is-on { background: rgba(255, 255, 255, 0.05); }
   .field-row .v { font-family: var(--font-mono, monospace); font-size: 12.5px; color: var(--text-1); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 
+  /* Volcado hexadecimal estilo editor (inspector) */
+  .hexdump { font-family: var(--font-mono, monospace); font-size: 12.5px; line-height: 1.9; overflow-x: auto; }
+  .hexdump .row { display: flex; gap: 14px; white-space: nowrap; }
+  .hexdump .off { color: var(--text-4); min-width: 56px; }
+  .hexdump .bytes { display: flex; gap: 4px; }
+  .hexdump .bytes span { width: 22px; text-align: center; border-radius: 4px; color: var(--c, var(--text-2)); transition: background-color 0.15s; }
+  .hexdump .bytes span:nth-child(8) { margin-right: 8px; }
+  .hexdump.is-focus .bytes span:not(.is-on) { opacity: 0.3; }
+  .hexdump .bytes span.is-on { background: color-mix(in srgb, var(--c) 22%, transparent); }
+  .hexdump .ascii { color: var(--text-3); letter-spacing: 0.06em; }
+
   /* ------------------------------------------------------------------------
-     15. Avisos (toasts)
+     15. Preguntas frecuentes
+     ------------------------------------------------------------------------ */
+  .faq details { border-bottom: 1px solid var(--line); interpolate-size: allow-keywords; }
+  .faq summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 4px;
+    cursor: pointer;
+    font-size: 16.5px;
+    font-weight: 550;
+    color: var(--text-1);
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary .plus { position: relative; width: 14px; height: 14px; flex: none; }
+  .faq summary .plus::before, .faq summary .plus::after { content: ""; position: absolute; inset: 6px 0; height: 1.5px; background: var(--text-3); border-radius: 2px; transition: transform 0.3s var(--ease-out), background-color 0.2s; }
+  .faq summary .plus::after { transform: rotate(90deg); }
+  .faq details[open] summary .plus::after { transform: rotate(0); }
+  .faq details[open] summary .plus::before { background: var(--coral); }
+  .faq details::details-content { block-size: 0; overflow: hidden; transition: block-size 0.35s var(--ease-out), content-visibility 0.35s allow-discrete; }
+  .faq details[open]::details-content { block-size: auto; }
+  .faq .answer { padding: 0 4px 22px; color: var(--text-3); max-width: 68ch; line-height: 1.7; }
+
+  /* ------------------------------------------------------------------------
+     16. Ventana modal de inicio de sesión
+     ------------------------------------------------------------------------ */
+  dialog.modal {
+    margin: auto;
+    width: min(420px, calc(100vw - 32px));
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    overflow: visible;
+  }
+  dialog.modal::backdrop { background: rgba(5, 4, 20, 0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  dialog.modal[open] .modal-card { animation: modal-in 0.4s var(--ease-spring); }
+  dialog.modal[open]::backdrop { animation: fade-in 0.3s ease; }
+  @keyframes modal-in { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: none; } }
+  @keyframes fade-in { from { opacity: 0; } }
+  .divider-text { display: flex; align-items: center; gap: 12px; font-size: 12.5px; color: var(--text-4); }
+  .divider-text::before, .divider-text::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line-strong); }
+  .avatar-fallback { display: grid; place-items: center; font-size: 13px; font-weight: 600; color: #fff; background: linear-gradient(145deg, var(--violet), var(--blue)); }
+  .menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    min-width: 220px;
+    padding: 6px;
+    border-radius: 14px;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.25s var(--ease-out);
+  }
+  .menu.is-open { opacity: 1; transform: none; pointer-events: auto; }
+  .menu button, .menu a { display: flex; width: 100%; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 14px; color: var(--text-2); }
+  .menu button:hover, .menu a:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-1); }
+
+  /* ------------------------------------------------------------------------
+     17. Avisos (toasts)
      ------------------------------------------------------------------------ */
   .toasts { position: fixed; z-index: 80; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; width: calc(100vw - 32px); max-width: 440px; }
   .toast {
@@ -728,7 +806,7 @@
   @keyframes toast-out { to { opacity: 0; transform: translateY(6px); } }
 
   /* ------------------------------------------------------------------------
-     16. Formularios
+     18. Formularios
      ------------------------------------------------------------------------ */
   .field {
     width: 100%;
@@ -835,7 +913,7 @@
   .switch input:checked::after { transform: translateX(15px); }
 
   /* ------------------------------------------------------------------------
-     17. Estudio: riel de pasos, paneles, estadísticas, tablas
+     19. Estudio: riel de pasos, paneles, estadísticas, tablas
      ------------------------------------------------------------------------ */
   .rail-step {
     display: grid;
@@ -916,6 +994,7 @@
   .stat-hero .v { color: var(--mint); font-size: 30px; }
   .stat-warn { background: linear-gradient(160deg, rgba(255, 200, 87, 0.12), rgba(255, 200, 87, 0.02)); border-color: rgba(255, 200, 87, 0.3); }
   .stat-warn .v { color: var(--amber); font-size: 30px; }
+  .i-dot { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: var(--violet-soft); background: rgba(123, 92, 255, 0.2); }
 
   .tbl-wrap { border-radius: 14px; border: 1px solid var(--line); overflow: auto; max-height: 440px; background: rgba(5, 4, 22, 0.28); }
   .tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
@@ -998,14 +1077,57 @@
     background: rgba(5, 4, 22, 0.42);
     border: 1px solid var(--line);
   }
+  .bits-box { font-family: var(--font-mono, monospace); font-size: 12.5px; line-height: 2; color: var(--text-2); word-spacing: 0.35em; }
+  .bits-box .b1 { color: var(--cyan); }
+  .bits-box .b0 { color: var(--text-4); }
+  .bits-box .pad { color: var(--rose); opacity: 0.8; text-decoration: underline dotted; }
+
+  /* Resultados de Gutenberg */
+  .book {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.025);
+    transition: border-color 0.2s, background-color 0.2s, transform 0.2s var(--ease-out);
+  }
+  .book:hover { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.05); }
+  .book-cover {
+    width: 40px;
+    height: 52px;
+    border-radius: 6px 9px 9px 6px;
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+    font-weight: 650;
+    color: rgba(255, 255, 255, 0.9);
+    background: linear-gradient(150deg, hsl(var(--h) 70% 62%), hsl(calc(var(--h) + 40) 70% 40%));
+    box-shadow: inset 3px 0 0 rgba(0, 0, 0, 0.18), 0 6px 14px -8px rgba(0, 0, 0, 0.8);
+  }
+  .book h4 { font-size: 15px; font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .book p { font-size: 13px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 520px) { .book { grid-template-columns: 40px 1fr; } .book .btn { grid-column: 1 / -1; width: 100%; } }
+
+  .skeleton { position: relative; overflow: hidden; background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+  .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent); animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { to { transform: translateX(100%); } }
 
   .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.2); border-top-color: currentColor; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  .checks li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); font-size: 14px; }
+  .checks li + li { margin-top: 8px; }
+  .checks .v { font-family: var(--font-mono, monospace); font-size: 12px; color: var(--text-3); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46vw; }
   .x-dot { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: #2a0510; background: var(--rose); }
+  .flowline { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-family: var(--font-mono, monospace); font-size: 13.5px; color: var(--text-1); }
+  .flowline .f { padding: 6px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
+  .flowline svg { color: var(--text-4); }
 
   /* ------------------------------------------------------------------------
-     18. Árbol de Huffman (SVG del estudio)
+     20. Árbol de Huffman (SVG del estudio y del inspector)
      ------------------------------------------------------------------------ */
   .tree-stage {
     position: relative;
@@ -1106,7 +1228,55 @@
   .scrub::-moz-range-thumb { width: 14px; height: 14px; border: none; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(255, 106, 77, 0.3); }
 
   /* ------------------------------------------------------------------------
-     19. Aparición al hacer scroll (sólo encabezados de sección)
+     21. Laboratorio de expansión mínima
+     ------------------------------------------------------------------------ */
+  .graph-stage {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 1px 1px, rgba(190, 182, 255, 0.08) 1px, transparent 0) 0 0 / 24px 24px,
+      rgba(5, 4, 22, 0.42);
+    border: 1px solid var(--line);
+    touch-action: none;
+  }
+  .graph-stage svg { width: 100%; height: auto; display: block; }
+  .g-edge line { stroke: rgba(190, 182, 255, 0.22); stroke-width: 2; transition: stroke 0.3s, stroke-width 0.3s, opacity 0.4s; }
+  .g-edge .w-bg { fill: #120f3b; stroke: rgba(190, 182, 255, 0.2); transition: stroke 0.3s, fill 0.3s; }
+  .g-edge text { font-family: var(--font-mono, monospace); font-size: 11px; fill: var(--text-3); text-anchor: middle; dominant-baseline: central; transition: fill 0.3s; }
+  .g-edge.is-current line { stroke: var(--amber); stroke-width: 3.5; }
+  .g-edge.is-current .w-bg { stroke: var(--amber); }
+  .g-edge.is-current text { fill: var(--amber); }
+  .g-edge.is-in line { stroke: var(--mint); stroke-width: 3.5; filter: drop-shadow(0 0 6px rgba(78, 227, 181, 0.6)); }
+  .g-edge.is-in .w-bg { stroke: var(--mint); fill: #0b3a32; }
+  .g-edge.is-in text { fill: var(--mint); }
+  .g-edge.is-out line { stroke: var(--rose); stroke-dasharray: 5 6; opacity: 0.45; }
+  .g-edge.is-out text { fill: var(--rose); }
+  .g-edge.is-frontier line { stroke: rgba(87, 210, 255, 0.55); stroke-dasharray: 2 5; }
+  .g-node circle { fill: #1c1857; stroke: rgba(190, 182, 255, 0.55); stroke-width: 2; transition: fill 0.35s, stroke 0.35s; }
+  .g-node text { font-family: var(--font-mono, monospace); font-size: 12.5px; font-weight: 600; fill: #fff; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .g-node { cursor: grab; }
+  .g-node.is-tree circle { fill: var(--violet); stroke: #fff; }
+  .g-node.is-start circle { stroke: var(--coral); stroke-width: 3; }
+  .edge-list li {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: var(--font-mono, monospace);
+    color: var(--text-3);
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .edge-list li.is-current { background: rgba(255, 200, 87, 0.12); color: var(--amber); }
+  .edge-list li.is-in { color: var(--mint); }
+  .edge-list li.is-out { color: var(--rose); text-decoration: line-through; text-decoration-color: rgba(255, 93, 122, 0.5); }
+  .edge-list .ico { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; background: rgba(255, 255, 255, 0.06); }
+
+  /* ------------------------------------------------------------------------
+     22. Aparición al hacer scroll (sólo encabezados de sección)
      ------------------------------------------------------------------------ */
   .reveal { opacity: 0; transform: translateY(14px); transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out); }
   .reveal.is-in { opacity: 1; transform: none; }
@@ -1138,12 +1308,10 @@
 }
 
 /* --------------------------------------------------------------------------
-   20. Movimiento reducido: se respetan las preferencias del sistema
+   23. Movimiento reducido: se respetan las preferencias del sistema
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   .reveal, .intro > *, .intro-late { opacity: 1 !important; transform: none !important; }
   .marquee-track { animation: none !important; }
 }
-
-

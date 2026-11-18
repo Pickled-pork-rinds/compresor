@@ -64,7 +64,7 @@ de la versión web y de la de Python son idénticos byte a byte.
 
 ## Validaciones del lector
 
-Antes de descomprimir, el lector (`parse()` en la web, `leer_cabecera()` en Python) comprueba:
+Antes de descomprimir, el inspector comprueba:
 
 - la firma `HFZ` y la versión;
 - que no haya banderas desconocidas y que `S` coincida con el modo;

@@ -1,12 +1,12 @@
 /* ==========================================================================
-   js/huffman.js — Núcleo del algoritmo de Huffman (técnica voraz) 
+   js/huffman.js — Núcleo del algoritmo de Huffman (técnica voraz)
    --------------------------------------------------------------------------
    · Implementado a mano: NO usa zip, gzip ni ninguna librería de compresión.
    · Funciona en el navegador (window.Huffman) y en Node (module.exports).
    · Produce archivos .hfz idénticos byte a byte a los de python/huffman.py.
 
    Flujo:  bytes → símbolos → frecuencias → árbol (voraz) → códigos → bits
-           → archivo .hfz → lectura → descompresión → verificación CRC-32
+           → archivo .hfz → (inspector) → descompresión → verificación CRC-32
 
    Modo de símbolos
    · "char": cada carácter Unicode es un símbolo (á, ñ, ¿ cuentan como uno).
@@ -16,11 +16,11 @@
    Regla de desempate (para que el árbol se pueda reconstruir EXACTAMENTE):
    se saca primero el nodo de menor frecuencia y, si empatan, el que se creó
    antes (id menor). Las hojas se crean en orden ascendente de símbolo.
-   El formato completo está documentado en docs/formato-hfz.md  
+   El formato completo está documentado en docs/formato-hfz.md
    ========================================================================== */
 (function (root) {
   'use strict';
- 
+
   const MAGIC = [0x48, 0x46, 0x5a]; // "HFZ"
   const VERSION = 1;
   const FLAG_CHAR = 0x01;
@@ -295,7 +295,7 @@
   }
 
   /* ------------------------------------------------------------------------
-     6) Lectura y validación del encabezado
+     6) Lectura y validación del encabezado (lo usa el inspector)
      ------------------------------------------------------------------------ */
   function parse(input) {
     const file = input instanceof Uint8Array ? input : new Uint8Array(input);

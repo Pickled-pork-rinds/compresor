@@ -1,6 +1,6 @@
-""" 
-huffman.py — Núcleo del algoritmo de Huffman (técnica voraz) en Python. 
-   
+"""
+huffman.py — Núcleo del algoritmo de Huffman (técnica voraz) en Python.
+
 · Implementado a mano: NO usa zip, gzip, zlib ni otra librería de compresión.
   (binascii.crc32 sólo calcula una suma de verificación; no comprime nada.)
 · Genera archivos .hfz idénticos byte a byte a los de la versión web
@@ -8,7 +8,7 @@ huffman.py — Núcleo del algoritmo de Huffman (técnica voraz) en Python.
 · El formato está documentado en docs/formato-hfz.md
 
 Flujo:  bytes → símbolos → frecuencias → árbol (voraz) → códigos → bits
-        → archivo .hfz → lectura → descompresión → verificación CRC-32
+        → archivo .hfz → (inspector) → descompresión → verificación CRC-32
 
 Regla de desempate (para reconstruir EXACTAMENTE el mismo árbol): se saca
 primero el nodo de menor frecuencia y, si empatan, el que se creó antes.
@@ -202,7 +202,7 @@ def comprimir(datos: bytes, nombre: str = "", modo: str = "auto",
 
 
 # --------------------------------------------------------------------------
-# 6) Lectura: leer y validar el encabezado
+# 6) Inspector: leer y validar el encabezado
 # --------------------------------------------------------------------------
 def leer_cabecera(archivo: bytes) -> dict:
     if len(archivo) < CABECERA_FIJA:
@@ -381,4 +381,3 @@ def vista_bits(archivo: bytes, cab: dict, max_bits: int = 256) -> str:
     cuerpo = archivo[cab["offset_datos"]:cab["offset_datos"] + (n + 7) // 8]
     cadena = "".join(f"{b:08b}" for b in cuerpo)[:n]
     return " ".join(cadena[i:i + 8] for i in range(0, len(cadena), 8))
-       

@@ -1,14 +1,16 @@
 /* ==========================================================================
-   js/app.js — Estudio de compresión (app.html) 
+   js/app.js — Estudio de compresión (app.html)
    --------------------------------------------------------------------------
    Flujo:  1 Fuente → 2 Analizar → 3 Árbol → 4 Códigos → 5 Comprimir
+           → 6 Inspeccionar → 7 Verificar
    El estado vive en el objeto S. Cada paso desbloquea el siguiente.
-   Los cálculos los hace js/huffman.js; aquí sólo se muestran.  
+   Los cálculos los hace js/huffman.js; aquí sólo se muestran.
    ========================================================================== */
 (function () {
   'use strict';
-  const { $, $$, esc, icon, fmtInt, fmtNum, toast, download, copy, segmented } = window.UI;
+  const { $, $$, esc, icon, fmtInt, fmtNum, toast, download, copy, segmented, history } = window.UI;
   const H = window.Huffman;
+  const G = window.Gutenberg;
   const SAMPLES = window.HUFFLY_SAMPLES || [];
   const enc = new TextEncoder();
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -19,15 +21,19 @@
     { id: 'arbol', label: 'Árbol' },
     { id: 'codigos', label: 'Códigos' },
     { id: 'comprimir', label: 'Comprimir' },
+    { id: 'inspector', label: 'Inspeccionar' },
+    { id: 'verificar', label: 'Verificar' },
   ];
   const MAX_TREE = 700; // con más hojas el dibujo deja de ser legible
-  const S = { doc: null, analysis: null, compressed: null, picked: null, done: new Set(), view: 'fuente' };
+  const S = { doc: null, analysis: null, compressed: null, insp: null, restored: null, picked: null, done: new Set(), view: 'fuente' };
 
   /* ------------------------------------------------------------------------
      Utilidades de presentación
      ------------------------------------------------------------------------ */
+  const hex8 = (n) => '0x' + (n >>> 0).toString(16).toUpperCase().padStart(8, '0');
   const pct = (x, d = 1) => `${fmtNum(x * 100, d)} %`;
   const baseName = (name) => (name || 'archivo').replace(/\.[^./\\]+$/, '') || 'archivo';
+  const slug = (s) => (s || 'libro').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'libro';
   const info = (sym, mode) => H.symbolInfo(sym, mode);
   const symChip = (sym, mode) => {
     const i = info(sym, mode);
@@ -147,7 +153,7 @@
 
   function resetFrom(step) {
     const order = STEPS.map((s) => s.id);
-    order.slice(order.indexOf(step)).forEach(lock);
+    order.slice(order.indexOf(step)).forEach((id) => { if (id !== 'inspector') lock(id); });
     updateRail();
   }
 
@@ -155,9 +161,22 @@
      1. Fuente
      ------------------------------------------------------------------------ */
   let srcTabs;
+  const results = new Map();
 
   function initSource() {
     srcTabs = segmented($('#src-tabs'), (v) => $$('[data-src]').forEach((el) => { el.hidden = el.dataset.src !== v; }));
+
+    // Gutenberg
+    $('#gb-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      search($('#gb-q').value.trim(), $('#gb-lang').value);
+    });
+    $$('#gb-suggest [data-q]').forEach((b) => b.addEventListener('click', () => {
+      $('#gb-q').value = b.dataset.q;
+      $('#gb-lang').value = b.dataset.lang;
+      search(b.dataset.q, b.dataset.lang);
+    }));
+    $('#gb-results').addEventListener('click', onBookClick);
 
     // Archivo local
     const fileIn = $('#file-in');
@@ -205,9 +224,106 @@
     });
   }
 
+  async function search(q, lang) {
+    if (!q) {
+      $('#gb-q').focus();
+      return;
+    }
+    const box = $('#gb-results');
+    box.innerHTML = [0, 1, 2].map(() => '<div class="skeleton h-[78px] rounded-[14px]"></div>').join('');
+    $('#gb-btn').disabled = true;
+    try {
+      const { via, resultados } = await G.buscar(q, lang);
+      results.clear();
+      if (!resultados.length) {
+        box.innerHTML = `<div class="rounded-[14px] border border-dashed border-[var(--line-strong)] p-5 text-[14px] text-[var(--text-3)]">No hay libros en texto plano para «${esc(q)}»${lang ? ' en ese idioma' : ''}. Prueba con el apellido del autor o con «Todos los idiomas».</div>`;
+        return;
+      }
+      const shown = resultados.slice(0, 12);
+      shown.forEach((b) => results.set(b.id, b));
+      box.innerHTML = shown.map(bookRow).join('') +
+        `<p class="text-[12.5px] text-[var(--text-4)] pt-1">${resultados.length > 12 ? `Se muestran 12 de ${fmtInt(resultados.length)}. ` : ''}Fuente: ${esc(via)}.</p>`;
+    } catch (err) {
+      box.innerHTML = errorBox(
+        'No se pudo consultar el catálogo de Gutenberg.',
+        `Revisa tu conexión e inténtalo de nuevo. También puedes descargar el libro desde gutenberg.org y subirlo en la pestaña «Subir .txt». (${esc(err.message)})`,
+        '<a class="btn btn-glass btn-sm" href="https://www.gutenberg.org/ebooks/search/?query=' + encodeURIComponent(q) + '" target="_blank" rel="noopener">Buscar en gutenberg.org</a>'
+      );
+    } finally {
+      $('#gb-btn').disabled = false;
+    }
+  }
+
+  function bookRow(b) {
+    const hue = (b.id * 47) % 360;
+    const initial = (b.titulo || '?').trim().charAt(0).toUpperCase();
+    return `
+      <div class="book" data-row="${b.id}">
+        <span class="book-cover" style="--h:${hue}" aria-hidden="true">${esc(initial)}</span>
+        <div class="min-w-0">
+          <h4>${esc(b.titulo)}</h4>
+          <p class="flex gap-3"><span class="truncate">${esc(b.autores.join(', ') || 'Autor desconocido')}</span><span class="mono shrink-0">#${b.id}</span><span class="shrink-0 uppercase">${esc(b.idiomas.join(' '))}</span><span class="shrink-0 hidden sm:inline">${fmtInt(b.descargas)} descargas</span></p>
+        </div>
+        <button class="btn btn-glass btn-sm" type="button" data-book="${b.id}">Usar este libro</button>
+      </div>`;
+  }
+
+  function errorBox(title, body, actions = '') {
+    return `<div class="rounded-[14px] border border-[rgba(255,200,87,0.3)] bg-[rgba(255,200,87,0.06)] p-4 sm:p-5">
+      <div class="flex gap-3"><span class="text-[var(--amber)] shrink-0 mt-0.5">${icon('alert', 18)}</span>
+      <div><div class="font-medium text-[var(--text-1)]">${title}</div><p class="mt-1 text-[14px] text-[var(--text-3)] leading-relaxed">${body}</p>${actions ? `<div class="mt-3 flex flex-wrap gap-2">${actions}</div>` : ''}</div></div></div>`;
+  }
+
+  async function onBookClick(e) {
+    const btn = e.target.closest('[data-book]');
+    if (btn) {
+      const book = results.get(+btn.dataset.book);
+      const old = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Descargando…';
+      try {
+        const { bytes, via } = await G.descargar(book, (got, total) => {
+          btn.innerHTML = `<span class="spinner"></span>${H.formatBytes(got)}${total ? ` de ${H.formatBytes(total)}` : ''}`;
+        });
+        let data = bytes;
+        let stripped = false;
+        if ($('#gb-strip').checked) {
+          const text = H.decodeUtf8(bytes);
+          const body = text && G.soloObra(text);
+          if (body) {
+            data = enc.encode(body);
+            stripped = true;
+          }
+        }
+        setDoc({
+          name: `${slug(book.titulo)}-${book.id}.txt`,
+          bytes: data,
+          origin: `Project Gutenberg #${book.id}`,
+          detail: `${book.autores.join(', ')}. Descargado mediante ${via}${stripped ? ', sin la licencia de Gutenberg' : ''}.`,
+        });
+        toast(`«${book.titulo}» está listo para analizar`, 'ok');
+      } catch (err) {
+        const row = btn.closest('.book');
+        $(`[data-manual="${book.id}"]`)?.remove();
+        row.insertAdjacentHTML('afterend', `<div data-manual="${book.id}">${errorBox(
+          'No se pudo descargar este libro automáticamente.',
+          'Ábrelo en gutenberg.org, descarga la versión «Plain Text UTF-8» y súbela en la pestaña «Subir .txt». El resultado es el mismo.',
+          `<a class="btn btn-glass btn-sm" href="${err.manual || 'https://www.gutenberg.org/ebooks/' + book.id}" target="_blank" rel="noopener">${icon('external', 15)}Abrir en gutenberg.org</a><button class="btn btn-ghost btn-sm" type="button" data-go-upload>${icon('upload', 15)}Ir a «Subir .txt»</button>`
+        )}</div>`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = old;
+      }
+      return;
+    }
+    if (e.target.closest('[data-go-upload]')) srcTabs.select('archivo');
+  }
+
   async function readTxt(file) {
     if (/\.hfz$/i.test(file.name)) {
-      toast('Ese archivo ya está comprimido. Elige un .txt.', 'err');
+      toast('Es un archivo comprimido: se abrió en el inspector.');
+      await openHfzFile(file);
+      go('inspector');
       return;
     }
     if (file.size > 60 * 1024 * 1024) {
@@ -230,6 +346,7 @@
     S.picked = null;
     S.done = new Set(['fuente']);
     ['analizar', 'arbol', 'codigos', 'comprimir'].forEach(lock);
+    if (S.restored && !S.insp) lock('verificar');
 
     const text = H.decodeUtf8(doc.bytes);
     doc.text = text;
@@ -565,6 +682,7 @@
     complete('comprimir');
     docMini();
     go('comprimir');
+    history.add({ nombre: S.doc.name, original: S.doc.bytes.length, comprimido: r.file.length, modo: S.analysis.mode, simbolos: S.analysis.entries.length });
   }
 
   function renderCompress() {
@@ -614,6 +732,7 @@
       <div class="cmp-row"><span class="${x.k === 'Huffman' ? 'text-[var(--text-1)] font-medium' : ''}">${x.k}</span><div class="track"><div class="fill" style="width:${(x.v / top) * 100}%;background:${x.c}"></div></div><span class="val">${fmtNum(x.v, 2)}</span></div>`).join('');
 
     $('#btn-download').innerHTML = `${icon('download', 17)}Descargar ${esc(r.name)}`;
+    $('#btn-to-inspector').innerHTML = `${icon('inspect', 17)}Abrir en el inspector`;
     $('#btn-md').innerHTML = `${icon('copy', 17)}Copiar resultados en Markdown`;
   }
 
@@ -635,10 +754,275 @@
       download(S.compressed.file, S.compressed.name);
       toast(`${S.compressed.name} descargado`, 'ok');
     });
+    $('#btn-to-inspector').addEventListener('click', () => {
+      openHfzBytes(S.compressed.file, S.compressed.name);
+      go('inspector');
+    });
     $('#btn-md').addEventListener('click', async () => {
       await copy(markdownRow());
       toast('Resultados copiados. Pégalos en tu README.', 'ok');
     });
+  }
+
+  /* ------------------------------------------------------------------------
+     6. Inspector
+     ------------------------------------------------------------------------ */
+  let inspTabs = null;
+  let itv = null;
+  const CATEGORY = { magic: 'id', version: 'id', flags: 'id', encoder: 'id', created: 'meta', size: 'meta', crc: 'meta', bits: 'bits', padding: 'bits', namelen: 'name', name: 'name', count: 'table', widths: 'table', table: 'table', data: 'data' };
+
+  async function openHfzFile(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    openHfzBytes(bytes, file.name);
+  }
+
+  function openHfzBytes(bytes, name) {
+    const err = $('#insp-error');
+    if (err) err.remove();
+    let h;
+    try {
+      h = H.parse(bytes);
+    } catch (e) {
+      $('#insp').hidden = true;
+      $('#hfz-drop').insertAdjacentHTML('afterend', `<div id="insp-error" class="mt-4">${errorBox(`No se pudo abrir «${esc(name)}».`, esc(e.message))}</div>`);
+      return;
+    }
+    S.insp = { bytes, name, h };
+    S.restored = null;
+    lock('verificar');
+    renderInspector();
+    complete('inspector');
+  }
+
+  function renderInspector() {
+    const { bytes, name, h } = S.insp;
+    const c = bytes.length;
+    const n = h.originalSize;
+    const saved = n - c;
+    $('#insp').hidden = false;
+    $('#insp-name').textContent = name;
+    const ext = name.includes('.') ? name.split('.').pop() : 'sin extensión';
+    $('#insp-meta').innerHTML = `<span class="inline-flex flex-wrap gap-x-3"><span>${H.formatBytes(c)}</span><span>${fmtInt(c)} bytes</span><span>extensión .${esc(ext)}</span></span>`;
+    $('#insp-badges').innerHTML = `
+      <span class="badge badge-info">Formato HFZ, versión ${h.version}</span>
+      <span class="badge badge-info">Modo ${h.mode === 'char' ? 'carácter' : 'byte'}</span>
+      <span class="badge badge-ok">Estructura válida</span>`;
+    $('#insp-metrics').innerHTML =
+      stat('Tamaño original', H.formatBytes(n), `${fmtInt(n)} bytes`) +
+      stat('Tamaño comprimido', H.formatBytes(c), `${fmtInt(c)} bytes`) +
+      stat(saved >= 0 ? 'Ahorro' : 'Crecimiento', H.formatBytes(Math.abs(saved)), `${fmtInt(Math.abs(saved))} bytes`) +
+      stat(saved >= 0 ? 'Compresión' : 'Aumento', n ? pct(Math.abs(saved) / n) : '—', n ? `razón ${fmtNum(n / c, 2)}\u00a0:\u00a01` : '', saved >= 0 ? 'stat-hero' : 'stat-warn') +
+      stat('Símbolos distintos', fmtInt(h.symbolCount), h.mode === 'char' ? 'caracteres Unicode' : 'valores de byte') +
+      stat('Bits codificados', fmtInt(h.totalBits), `más ${h.padding} de relleno`) +
+      stat('Nombre original', `<span class="text-[17px] break-all">${esc(h.name || '(sin nombre)')}</span>`, h.encoderName) +
+      stat('Creado', new Date(h.created * 1000).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }), new Date(h.created * 1000).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
+
+    renderHexdump();
+    const byFreq = [...h.entries].sort((x, y) => y.freq - x.freq || x.sym - y.sym).slice(0, 600);
+    $('#insp-freq tbody').innerHTML = byFreq.map((e) => `<tr><td>${symChip(e.sym, h.mode)}</td><td class="mono text-[12.5px] text-[var(--text-3)]">${H.hexSym(e.sym, h.mode)}</td><td class="num text-[var(--text-1)]">${fmtInt(e.freq)}</td><td class="num">${pct(e.freq / h.totalSymbols, 2)}</td></tr>`).join('');
+    $('#insp-codes tbody').innerHTML = byFreq.map((e) => `<tr><td>${symChip(e.sym, h.mode)}</td><td class="num">${fmtInt(e.freq)}</td><td>${codeHtml(e.code)}</td><td class="num">${e.code.length}</td></tr>`).join('');
+    renderBits();
+    if (itv) {
+      itv.setTree(h.symbolCount <= MAX_TREE ? h.tree : null, h.mode, h.steps);
+      itv.codes = h.codes;
+    }
+    inspTabs.select('estructura', true);
+    showInspTab('estructura');
+  }
+
+  function renderHexdump() {
+    const { bytes, h } = S.insp;
+    const limit = Math.min(bytes.length, Math.min(768, Math.ceil((h.dataOffset + 64) / 16) * 16));
+    const owner = new Int16Array(limit);
+    h.segments.forEach((s, i) => { for (let k = s.start; k < Math.min(limit, s.start + s.len); k++) owner[k] = i; });
+    let html = '';
+    for (let row = 0; row < limit; row += 16) {
+      let cells = '';
+      let ascii = '';
+      for (let k = row; k < row + 16; k++) {
+        if (k < limit) {
+          const b = bytes[k];
+          const seg = h.segments[owner[k]];
+          cells += `<span class="seg-${CATEGORY[seg.key]}" data-seg="${owner[k]}">${b.toString(16).toUpperCase().padStart(2, '0')}</span>`;
+          ascii += b >= 32 && b < 127 ? esc(String.fromCharCode(b)) : '.';
+        } else cells += '<span></span>';
+      }
+      html += `<div class="row"><span class="off">${row.toString(16).toUpperCase().padStart(6, '0')}</span><span class="bytes">${cells}</span><span class="ascii hidden md:inline">${ascii}</span></div>`;
+    }
+    const dump = $('#hexdump');
+    dump.innerHTML = html;
+    $('#hex-note').textContent = bytes.length > limit ? `primeros ${fmtInt(limit)} de ${fmtInt(bytes.length)} bytes` : `${fmtInt(bytes.length)} bytes`;
+    $('#field-tbl tbody').innerHTML = h.segments.map((s, i) => `
+      <tr data-seg="${i}"><td><span class="inline-flex items-center gap-2.5"><span class="seg-swatch seg-${CATEGORY[s.key]}"></span><span class="text-[var(--text-1)]">${esc(s.label)}</span></span><div class="text-[12px] text-[var(--text-4)] whitespace-normal max-w-[260px]">${esc(s.desc)}</div></td>
+      <td class="num mono text-[12px]" title="desplazamiento ${s.start}">${fmtInt(s.len)}</td><td class="mono text-[12.5px] text-[var(--text-1)] max-w-[220px] truncate" title="${esc(s.value)}">${esc(s.value)}</td></tr>`).join('');
+  }
+
+  function focusSeg(i) {
+    const dump = $('#hexdump');
+    dump.classList.toggle('is-focus', i != null);
+    $$('.bytes span[data-seg]', dump).forEach((el) => el.classList.toggle('is-on', i != null && +el.dataset.seg === i));
+    $$('#field-tbl tbody tr').forEach((tr) => tr.classList.toggle('is-picked', i != null && +tr.dataset.seg === i));
+  }
+
+  function renderBits() {
+    const { bytes, h } = S.insp;
+    const MAX = 512;
+    const groups = H.bitPreview(bytes, h, MAX);
+    const shownBits = Math.min(h.totalBits, MAX);
+    $('#bits-title').textContent = `Primeros ${fmtInt(shownBits)} de ${fmtInt(h.totalBits)} bits de datos`;
+    $('#bits-note').textContent = `${h.padding} ${h.padding === 1 ? 'bit' : 'bits'} de relleno al final del último byte`;
+    let html = '';
+    groups.forEach((g, i) => {
+      if (i % 8 === 0) html += `${i ? '<br>' : ''}<span class="text-[var(--text-4)] mr-2">${String(i * 8).padStart(5, ' ')}</span>`;
+      let s = '';
+      for (const b of g) s += `<span class="b${b}">${b}</span>`;
+      if (g.length < 8 && shownBits === h.totalBits) for (let k = g.length; k < 8; k++) s += '<span class="pad">0</span>';
+      html += s + ' ';
+    });
+    $('#bits-box').innerHTML = html || '<span class="text-[var(--text-4)]">El archivo no tiene bits de datos (el texto estaba vacío).</span>';
+  }
+
+  function showInspTab(v) {
+    $$('[data-insp]').forEach((el) => { el.hidden = el.dataset.insp !== v; });
+    if (v === 'arbol' && S.insp) {
+      if (!itv) {
+        itv = new window.TreeView($('#insp-tree'));
+        itv.setTree(S.insp.h.symbolCount <= MAX_TREE ? S.insp.h.tree : null, S.insp.h.mode, S.insp.h.steps);
+        itv.codes = S.insp.h.codes;
+      }
+      requestAnimationFrame(() => itv.fit());
+    }
+  }
+
+  function initInspector() {
+    inspTabs = segmented($('#insp-tabs'), showInspTab);
+    const input = $('#hfz-in');
+    input.addEventListener('change', () => {
+      if (input.files[0]) openHfzFile(input.files[0]);
+      input.value = '';
+    });
+    dropzone($('#hfz-drop'), (f) => {
+      if (/\.txt$/i.test(f.name)) {
+        toast('Es un .txt: se cargó en el paso 1 para comprimirlo.');
+        readTxt(f);
+        go('fuente');
+        return;
+      }
+      openHfzFile(f);
+    });
+    const dump = $('#hexdump');
+    dump.addEventListener('pointerover', (e) => {
+      const s = e.target.closest('[data-seg]');
+      focusSeg(s ? +s.dataset.seg : null);
+    });
+    dump.addEventListener('pointerleave', () => focusSeg(null));
+    const ft = $('#field-tbl tbody');
+    ft.addEventListener('pointerover', (e) => {
+      const tr = e.target.closest('tr[data-seg]');
+      focusSeg(tr ? +tr.dataset.seg : null);
+    });
+    ft.addEventListener('pointerleave', () => focusSeg(null));
+    $('#btn-decompress').addEventListener('click', (e) => busy(e.currentTarget, 'Descomprimiendo…', decompress));
+  }
+
+  /* ------------------------------------------------------------------------
+     7. Verificar
+     ------------------------------------------------------------------------ */
+  async function sha256(bytes) {
+    if (!(window.crypto && crypto.subtle)) return null;
+    const d = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+    return Array.from(d, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function decompress() {
+    const t0 = performance.now();
+    const d = H.decompress(S.insp.bytes);
+    d.ms = performance.now() - t0;
+    S.restored = d;
+    await renderVerify();
+    unlock('verificar');
+    complete('verificar');
+    go('verificar');
+  }
+
+  async function renderVerify() {
+    const d = S.restored;
+    const h = d.header;
+    const orig = S.doc && S.doc.bytes.length === d.bytes.length && H.crc32(S.doc.bytes) === h.crc ? S.doc.bytes : null;
+    let diffs = null;
+    let firstDiff = -1;
+    if (orig) {
+      diffs = 0;
+      for (let i = 0; i < orig.length; i++) {
+        if (orig[i] !== d.bytes[i]) {
+          diffs++;
+          if (firstDiff < 0) firstDiff = i;
+        }
+      }
+    }
+    const [shaR, shaO] = await Promise.all([sha256(d.bytes), orig ? sha256(orig) : null]);
+    const okIco = `<span class="check-dot">${icon('check', 11)}</span>`;
+    const badIco = `<span class="x-dot">${icon('x', 11)}</span>`;
+    const infoIco = `<span class="i-dot">${icon('info', 12)}</span>`;
+    const row = (ico, text, value) => `<li>${ico}<span>${text}</span><span class="v" title="${esc(value)}">${esc(value)}</span></li>`;
+    const checks = [
+      row(d.sizeOk ? okIco : badIco, 'El tamaño coincide con el declarado en el encabezado', `${fmtInt(d.bytes.length)} B = ${fmtInt(h.originalSize)} B`),
+      row(d.crcOk ? okIco : badIco, 'El CRC-32 del recuperado coincide con el guardado', `${hex8(d.crc)} = ${hex8(h.crc)}`),
+      orig
+        ? row(diffs === 0 ? okIco : badIco, 'Comparación byte a byte con el original abierto', diffs === 0 ? `0 diferencias en ${fmtInt(orig.length)} bytes` : `${fmtInt(diffs)} diferencias, la primera en el byte ${firstDiff}`)
+        : row(infoIco, 'Comparación byte a byte', 'el .txt original no está abierto en esta sesión'),
+      shaR
+        ? orig
+          ? row(shaR === shaO ? okIco : badIco, 'La huella SHA-256 es idéntica', `${shaR.slice(0, 20)}…`)
+          : row(infoIco, 'Huella SHA-256 del recuperado', `${shaR.slice(0, 20)}…`)
+        : '',
+    ];
+    $('#checks').innerHTML = checks.join('');
+    const allOk = d.sizeOk && d.crcOk && (diffs === null || diffs === 0);
+    const verdict = $('#verdict');
+    verdict.className = 'mt-5 rounded-2xl px-4 py-3.5 text-[14.5px] font-medium flex items-center gap-3';
+    if (allOk) {
+      verdict.classList.add('bg-[rgba(78,227,181,0.09)]', 'border', 'border-[rgba(78,227,181,0.3)]', 'text-[var(--mint)]');
+      verdict.innerHTML = `${okIco}<span>${orig ? 'Recuperado idéntico al original.' : 'Recuperado completo: tamaño y CRC-32 coinciden con el encabezado.'} Descompresión en ${fmtNum(d.ms, 0)} ms.</span>`;
+    } else {
+      verdict.classList.add('bg-[rgba(255,93,122,0.08)]', 'border', 'border-[rgba(255,93,122,0.3)]', 'text-[var(--rose)]');
+      verdict.innerHTML = `${badIco}<span>El texto recuperado no coincide: el archivo .hfz está dañado o fue modificado.</span>`;
+    }
+    const origName = h.name || 'original.txt';
+    const recName = `${baseName(h.name || S.insp.name)}-recuperado.txt`;
+    const arrow = icon('arrow', 15);
+    $('#flow').innerHTML = `<span class="f">${esc(origName)}</span>${arrow}<span class="f">${esc(S.insp.name)}</span>${arrow}<span class="f">${esc(recName)}</span>`;
+    const text = h.mode === 'char' ? new TextDecoder().decode(d.bytes) : decodeForDisplay(d.bytes);
+    const LIMIT = 5000;
+    $('#restored-title').textContent = `Texto recuperado: ${fmtInt(text.length)} caracteres${text.length > LIMIT ? `, se muestran los primeros ${fmtInt(LIMIT)}` : ''}`;
+    $('#restored-preview').textContent = text.slice(0, LIMIT);
+    const btn = $('#btn-download-txt');
+    btn.innerHTML = `${icon('download', 17)}Descargar ${esc(recName)}`;
+    btn.onclick = () => {
+      download(d.bytes, recName, 'text/plain;charset=utf-8');
+      toast(`${recName} descargado`, 'ok');
+    };
+  }
+
+  /* ------------------------------------------------------------------------
+     Historial
+     ------------------------------------------------------------------------ */
+  function renderHistory() {
+    const list = history.list();
+    const u = window.UI.auth.user();
+    $('#hist-sub').innerHTML = u
+      ? `Guardadas en este navegador para ${esc(u.name)}.`
+      : 'Se guardan sólo en este navegador. <button type="button" class="underline underline-offset-4 hover:text-white" data-login>Inicia sesión</button> para asociarlas a tu nombre.';
+    $('#hist-clear').hidden = !list.length;
+    if (!list.length) {
+      $('#hist-body').innerHTML = '<p class="text-[14px] text-[var(--text-3)]">Todavía no has comprimido nada. Cuando generes un .hfz aparecerá aquí con sus métricas.</p>';
+      return;
+    }
+    $('#hist-body').innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Archivo</th><th class="num">Original</th><th class="num">Comprimido</th><th class="num">Reducción</th><th>Modo</th><th>Fecha</th></tr></thead><tbody>
+      ${list.map((x) => `<tr><td class="text-[var(--text-1)] max-w-[240px] truncate">${esc(x.nombre)}</td><td class="num">${H.formatBytes(x.original)}</td><td class="num">${H.formatBytes(x.comprimido)}</td>
+      <td class="num" style="color:${x.comprimido <= x.original ? 'var(--mint)' : 'var(--amber)'}">${pct((x.original - x.comprimido) / x.original)}</td><td>${x.modo === 'char' ? 'carácter' : 'byte'}</td>
+      <td class="text-[var(--text-3)]">${new Date(x.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</td></tr>`).join('')}
+    </tbody></table></div>`;
   }
 
   /* ------------------------------------------------------------------------
@@ -657,6 +1041,13 @@
     initTree();
     initCodes();
     initCompress();
+    initInspector();
+    renderHistory();
+    document.addEventListener('huffly:historial', renderHistory);
+    $('#hist-clear').addEventListener('click', () => {
+      history.clear();
+      toast('Historial borrado');
+    });
     updateRail();
     scrollSpy();
 
