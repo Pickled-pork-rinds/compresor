@@ -12,7 +12,7 @@ expansión mínima** (Kruskal y Prim). Incluye una versión web y una aplicació
 |---|---|
 | Aplicación publicada | **https://compresor-two.vercel.app** |
 | Repositorio | https://github.com/Pickled-pork-rinds/compresor |
-| Tablero (GitHub Projects) | *https://github.com/Pickled-pork-rinds/compresor* |
+| Tablero (GitHub Projects) | *pegar aquí la URL del tablero* |
 | Reporte técnico (PDF) | [docs/reporte-tecnico.pdf](docs/reporte-tecnico.pdf) |
 
 ## Integrantes

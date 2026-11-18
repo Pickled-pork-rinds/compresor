@@ -58,9 +58,6 @@ Otros libros de Project Gutenberg medidos con `node tests/medir.js`:
 | Moby Dick | 1.19 MB | 695.04 KB | 42.7 % |
 | Biblia King James | 4.13 MB | 2.37 MB | 42.7 % |
 
-> **Búsqueda en vivo:** la búsqueda y descarga desde la aplicación (Paso 1 → Project Gutenberg) necesita
-> internet. Captura sugerida: `capturas/04-gutenberg-busqueda.jpg`, tomada desde la URL publicada.
-
 ## Prueba 3 · Integridad
 
 **Procedimiento:**
