@@ -115,7 +115,7 @@ class PruebasExpansionMinima(unittest.TestCase):
         aristas = [(0, 1, 2), (0, 3, 6), (1, 2, 3), (1, 3, 8), (1, 4, 5), (2, 4, 7), (3, 4, 9)]
         g = {"nodos": [(0, 0)] * 5, "aristas": [(i, a, b, w) for i, (a, b, w) in enumerate(aristas)]}
         self.assertEqual(M.kruskal(g)["total"], 16)
-        self.assertEqual(M.prim(g)["total"], 16)
+        self.assertEqual(M.prim(g)["total"], 16)   
 
 
 if __name__ == "__main__":
